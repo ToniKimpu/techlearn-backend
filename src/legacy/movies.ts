@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { requireAuth } from "./authJwt";
+import { prisma } from "../database/prisma";
 
-import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../middlewares/authJwt.js";
+
 
 
 const router = Router();

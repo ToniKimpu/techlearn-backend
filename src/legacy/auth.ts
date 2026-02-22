@@ -3,9 +3,11 @@ import { NextFunction, Request, Response, Router } from "express";
 import passport from "passport";
 
 import bcrypt from "bcrypt";
-import { generateAccessToken, generateRefreshToken } from "../lib/jwt.js";
-import { prisma } from "../lib/prisma.js";
-import { getSessionExpiry } from "../lib/session.js";
+
+import { prisma } from "../database/prisma.js"
+import { generateRefreshToken, getSessionExpiry } from "../utils/session.js";
+import { generateAccessToken } from "../utils/jwt";
+
 
 const router = Router();
 
