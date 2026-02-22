@@ -1,0 +1,239 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  // provider = "prisma-client"
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AuthUser {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions   Session[]
+  identities Identity[]
+
+  profileId String?  @unique @db.Uuid // FK column
+  profile   Profile? @relation(fields: [profileId], references: [id]) // relation declaration
+
+  @@map("auth")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  authId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  auth AuthUser @relation(fields: [authId], references: [id])
+
+  @@map("sessions")
+}
+
+model Identity {
+  id         String       @id @default(uuid())
+  provider   AuthProvider
+  providerId String
+  authId     String
+  auth       AuthUser     @relation(fields: [authId], references: [id])
+  createdAt  DateTime     @default(now())
+
+  @@unique([provider, providerId])
+  @@map("identities")
+}
+
+enum AuthProvider {
+  email
+  google
+  github
+}
+
+model Curriculum {
+  id          BigInt   @id @default(autoincrement())
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  image       String   @default("")
+  name        String?  @unique
+  description String?
+  isDeleted   Boolean  @default(false)
+
+  academicYears AcademicYear[]
+  grades        Grade[]
+  users         UserCurriculumMapping[]
+
+  @@map("curriculums")
+}
+
+model AcademicYear {
+  id              BigInt    @id @default(autoincrement())
+  name            String?
+  startDate       DateTime  @db.Date
+  endDate         DateTime  @db.Date
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime? @db.Timestamptz
+  isActiveSession Boolean?  @default(false)
+  isDeleted       Boolean?  @default(false)
+
+  curriculumId BigInt?
+  curriculum   Curriculum? @relation(fields: [curriculumId], references: [id])
+
+  users UserAcademicYearMapping[]
+
+  @@map("academic_years")
+}
+
+model Location {
+  id          BigInt   @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  is_deleted  Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  sort_order  BigInt   @default(1)
+
+  profiles Profile[]
+}
+
+model Profile {
+  id                      String    @id @db.Uuid
+  full_name               String
+  avatar_url              String?
+  gender                  String
+  dob                     DateTime? @db.Date
+  location_id             BigInt?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime? @db.Timestamptz(6)
+  user_type               String
+  phone_number            String?
+  email                   String?
+  is_deleted              Boolean   @default(false)
+  is_deactivated          Boolean   @default(false)
+  device_id               String    @default("device_id")
+  fcm_device_token        String?
+  is_notification_enabled Boolean   @default(true)
+
+  location Location? @relation(fields: [location_id], references: [id])
+
+  schools         School[]
+  userCurriculums UserCurriculumMapping[]
+  userGrades      UserGradeMapping[]
+  userSubjects    UserSubjectMapping[]
+  academicYears   UserAcademicYearMapping[]
+  authUser        AuthUser?
+}
+
+model Grade {
+  id            BigInt   @id @default(autoincrement())
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  image         String?
+  description   String?
+  name          String?
+  is_deleted    Boolean  @default(false)
+  curriculum_id BigInt?
+
+  curriculum Curriculum? @relation(fields: [curriculum_id], references: [id], onDelete: Restrict)
+  subjects   Subject[]
+
+  // 🔽 mappings
+  academicYearMappings UserAcademicYearMapping[]
+  userGradeMappings    UserGradeMapping[]
+}
+
+model Subject {
+  id          BigInt   @id @default(autoincrement())
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  name        String?
+  image       String?
+  description String?
+  is_deleted  Boolean  @default(false)
+  grade_id    BigInt?
+
+  grade    Grade?               @relation(fields: [grade_id], references: [id], onDelete: Restrict)
+  chapters Chapter[]
+  users    UserSubjectMapping[]
+}
+
+model Chapter {
+  id            BigInt    @id @default(autoincrement())
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  title         String
+  sort_order    Decimal
+  image_url     String?
+  is_deleted    Boolean   @default(false)
+  subject_id    BigInt?
+  label         String?
+  updated_at    DateTime? @db.Timestamptz(6)
+  content       String?
+  teacher_guide String?
+
+  subject Subject? @relation(fields: [subject_id], references: [id], onDelete: Restrict)
+}
+
+model School {
+  id          BigInt    @id @default(autoincrement())
+  school_name String
+  user_id     String    @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+
+  user Profile @relation(fields: [user_id], references: [id])
+}
+
+model UserAcademicYearMapping {
+  id               BigInt   @id @default(autoincrement()) // ✅ required for Prisma
+  user_id          String   @db.Uuid
+  student_grade_id BigInt?
+  academic_year_id BigInt?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  user          Profile       @relation(fields: [user_id], references: [id])
+  student_grade Grade?        @relation(fields: [student_grade_id], references: [id])
+  academic_year AcademicYear? @relation(fields: [academic_year_id], references: [id])
+
+  @@map("user_academic_year_mapping")
+}
+
+model UserCurriculumMapping {
+  user_id       String @db.Uuid
+  curriculum_id BigInt
+
+  user       Profile    @relation(fields: [user_id], references: [id])
+  curriculum Curriculum @relation(fields: [curriculum_id], references: [id])
+
+  @@id([user_id, curriculum_id])
+}
+
+model UserGradeMapping {
+  user_id  String @db.Uuid
+  grade_id BigInt
+
+  user  Profile @relation(fields: [user_id], references: [id])
+  grade Grade   @relation(fields: [grade_id], references: [id])
+
+  @@id([user_id, grade_id])
+}
+
+model UserSubjectMapping {
+  user_id    String @db.Uuid
+  subject_id BigInt
+
+  user    Profile @relation(fields: [user_id], references: [id])
+  subject Subject @relation(fields: [subject_id], references: [id])
+
+  @@id([user_id, subject_id])
+}
