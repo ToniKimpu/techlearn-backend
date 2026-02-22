@@ -8,8 +8,8 @@
     "prisma:generate": "prisma generate",
     "postinstall": "npm run prisma:generate",
     "predev": "npm run prisma:generate",
-    "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js"
+    "dev": "tsx watch src/app.ts",
+    "start": "node dist/app.js"
   },
   "keywords": [],
   "author": "",
