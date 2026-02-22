@@ -1,28 +1,21 @@
-import express, { Request, Response, NextFunction } from "express";
-import session from "express-session";
-import passport from "passport";
 import cors from "cors";
 import dotenv from "dotenv";
+import express, { NextFunction, Request, Response } from "express";
+import session from "express-session";
 
-import "./auth/passport.js";
-import authRoutes from "./routes/auth.js";
-import movieRoutes from "./routes/movies.js";
+import passport from "./config/passport.js";
+import authRoutes from "./modules/auth/routes.js";
+import movieRoutes from "./modules/movies/routes.js";
 
-// Load environment variables
 dotenv.config();
 
-// ---------- BigInt JSON handling ----------
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
-// ---------- Express app ----------
 const app = express();
 
-// ---------- MIDDLEWARE ----------
 app.use(express.json());
-
-// CORS (adjust origin as needed)
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
@@ -30,39 +23,32 @@ app.use(
   })
 );
 
-// ---------- SESSION SETUP ----------
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "dev_secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
 
-// ---------- PASSPORT INIT ----------
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ---------- ROUTES ----------
 app.use("/auth", authRoutes);
 app.use("/", movieRoutes);
 
-// Health check
 app.get("/", (_req: Request, res: Response) => {
   res.send("API running");
 });
 
-// ---------- ERROR HANDLER ----------
-app.use(
-  (err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err.stack || err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-);
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.stack || err);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 export default app;
