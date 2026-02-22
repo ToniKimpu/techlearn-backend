@@ -6,6 +6,7 @@ import session from "express-session";
 import passport from "./config/passport.js";
 import authRoutes from "./modules/auth/routes.js";
 import movieRoutes from "./modules/movies/routes.js";
+import curriculumRoutes from "./modules/curriculums/routes.js";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use(passport.session());
 
 app.use("/auth", authRoutes);
 app.use("/", movieRoutes);
+app.use("/", curriculumRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("API running");
