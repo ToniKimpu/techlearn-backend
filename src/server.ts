@@ -1,7 +1,7 @@
-import "dotenv/config";
+import "./config/env.js";
 import http from "http";
 import { Server } from "socket.io";
-import app from "./app.js";
+import app, { CORS_ORIGIN } from "./app.js";
 import { verifyAccessToken } from "./utils/jwt.js";
 
 const PORT = process.env.PORT || 4000;
@@ -10,7 +10,8 @@ const httpServer = http.createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: CORS_ORIGIN,
+    credentials: true,
   },
 });
 

@@ -4,3 +4,8 @@ node_modules
 
 /src/generated/prisma
 legacy
+
+# Sensitive / scratch files
+credential.md
+all_tables.txt
+tables_structure.txt

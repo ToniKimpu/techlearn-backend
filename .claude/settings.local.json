@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(head:*)",
+      "Bash(cd D:/SuperSimpleDev/techlearn-backend && git rm --cached credential.md all_tables.txt tables_structure.txt 2>&1)",
+      "Bash(cd D:/SuperSimpleDev/techlearn-backend && npm install express-rate-limit && npm install -D vitest @types/supertest supertest && npm uninstall express-session @types/express-session 2>&1)",
+      "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx prisma generate 2>&1)",
+      "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx tsc --noEmit 2>&1)",
+      "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx vitest run 2>&1)"
+    ]
+  }
+}

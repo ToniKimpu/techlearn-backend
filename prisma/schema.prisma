@@ -1,11 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  // provider = "prisma-client"
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
@@ -26,8 +19,8 @@ model AuthUser {
   sessions   Session[]
   identities Identity[]
 
-  profileId String?  @unique @db.Uuid // FK column
-  profile   Profile? @relation(fields: [profileId], references: [id]) // relation declaration
+  profileId String?  @unique @db.Uuid
+  profile   Profile? @relation(fields: [profileId], references: [id])
 
   @@map("auth")
 }
@@ -102,32 +95,32 @@ model Location {
   id          BigInt   @id @default(autoincrement())
   name        String   @unique
   description String?
-  is_deleted  Boolean  @default(false)
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  sort_order  BigInt   @default(1)
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  sortOrder   BigInt   @default(1) @map("sort_order")
 
   profiles Profile[]
 }
 
 model Profile {
-  id                      String    @id @db.Uuid
-  full_name               String
-  avatar_url              String?
-  gender                  String
-  dob                     DateTime? @db.Date
-  location_id             BigInt?
-  created_at              DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at              DateTime? @db.Timestamptz(6)
-  user_type               String
-  phone_number            String?
-  email                   String?
-  is_deleted              Boolean   @default(false)
-  is_deactivated          Boolean   @default(false)
-  device_id               String    @default("device_id")
-  fcm_device_token        String?
-  is_notification_enabled Boolean   @default(true)
+  id                    String    @id @db.Uuid
+  fullName              String    @map("full_name")
+  avatarUrl             String?   @map("avatar_url")
+  gender                String
+  dob                   DateTime? @db.Date
+  locationId            BigInt?   @map("location_id")
+  createdAt             DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt             DateTime? @db.Timestamptz(6) @map("updated_at")
+  userType              String    @map("user_type")
+  phoneNumber           String?   @map("phone_number")
+  email                 String?
+  isDeleted             Boolean   @default(false) @map("is_deleted")
+  isDeactivated         Boolean   @default(false) @map("is_deactivated")
+  deviceId              String    @default("device_id") @map("device_id")
+  fcmDeviceToken        String?   @map("fcm_device_token")
+  isNotificationEnabled Boolean   @default(true) @map("is_notification_enabled")
 
-  location Location? @relation(fields: [location_id], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
 
   schools         School[]
   userCurriculums UserCurriculumMapping[]
@@ -138,102 +131,101 @@ model Profile {
 }
 
 model Grade {
-  id            BigInt   @id @default(autoincrement())
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  image         String?
-  description   String?
-  name          String?
-  is_deleted    Boolean  @default(false)
-  curriculum_id BigInt?
+  id           BigInt   @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  image        String?
+  description  String?
+  name         String?
+  isDeleted    Boolean  @default(false) @map("is_deleted")
+  curriculumId BigInt?  @map("curriculum_id")
 
-  curriculum Curriculum? @relation(fields: [curriculum_id], references: [id], onDelete: Restrict)
+  curriculum Curriculum? @relation(fields: [curriculumId], references: [id], onDelete: Restrict)
   subjects   Subject[]
 
-  // 🔽 mappings
   academicYearMappings UserAcademicYearMapping[]
   userGradeMappings    UserGradeMapping[]
 }
 
 model Subject {
   id          BigInt   @id @default(autoincrement())
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
   name        String?
   image       String?
   description String?
-  is_deleted  Boolean  @default(false)
-  grade_id    BigInt?
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  gradeId     BigInt?  @map("grade_id")
 
-  grade    Grade?               @relation(fields: [grade_id], references: [id], onDelete: Restrict)
+  grade    Grade?               @relation(fields: [gradeId], references: [id], onDelete: Restrict)
   chapters Chapter[]
   users    UserSubjectMapping[]
 }
 
 model Chapter {
-  id            BigInt    @id @default(autoincrement())
-  created_at    DateTime  @default(now()) @db.Timestamptz(6)
-  title         String
-  sort_order    Decimal
-  image_url     String?
-  is_deleted    Boolean   @default(false)
-  subject_id    BigInt?
-  label         String?
-  updated_at    DateTime? @db.Timestamptz(6)
-  content       String?
-  teacher_guide String?
+  id           BigInt    @id @default(autoincrement())
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  title        String
+  sortOrder    Decimal   @map("sort_order")
+  imageUrl     String?   @map("image_url")
+  isDeleted    Boolean   @default(false) @map("is_deleted")
+  subjectId    BigInt?   @map("subject_id")
+  label        String?
+  updatedAt    DateTime? @db.Timestamptz(6) @map("updated_at")
+  content      String?
+  teacherGuide String?   @map("teacher_guide")
 
-  subject Subject? @relation(fields: [subject_id], references: [id], onDelete: Restrict)
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: Restrict)
 }
 
 model School {
-  id          BigInt    @id @default(autoincrement())
-  school_name String
-  user_id     String    @db.Uuid
-  created_at  DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime? @db.Timestamptz(6)
+  id         BigInt    @id @default(autoincrement())
+  schoolName String    @map("school_name")
+  userId     String    @db.Uuid @map("user_id")
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt  DateTime? @db.Timestamptz(6) @map("updated_at")
 
-  user Profile @relation(fields: [user_id], references: [id])
+  user Profile @relation(fields: [userId], references: [id])
 }
 
 model UserAcademicYearMapping {
-  id               BigInt   @id @default(autoincrement()) // ✅ required for Prisma
-  user_id          String   @db.Uuid
-  student_grade_id BigInt?
-  academic_year_id BigInt?
-  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  id             BigInt   @id @default(autoincrement())
+  userId         String   @db.Uuid @map("user_id")
+  studentGradeId BigInt?  @map("student_grade_id")
+  academicYearId BigInt?  @map("academic_year_id")
+  createdAt      DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
 
-  user          Profile       @relation(fields: [user_id], references: [id])
-  student_grade Grade?        @relation(fields: [student_grade_id], references: [id])
-  academic_year AcademicYear? @relation(fields: [academic_year_id], references: [id])
+  user          Profile       @relation(fields: [userId], references: [id])
+  studentGrade  Grade?        @relation(fields: [studentGradeId], references: [id])
+  academicYear  AcademicYear? @relation(fields: [academicYearId], references: [id])
 
   @@map("user_academic_year_mapping")
 }
 
 model UserCurriculumMapping {
-  user_id       String @db.Uuid
-  curriculum_id BigInt
+  userId       String @db.Uuid @map("user_id")
+  curriculumId BigInt @map("curriculum_id")
 
-  user       Profile    @relation(fields: [user_id], references: [id])
-  curriculum Curriculum @relation(fields: [curriculum_id], references: [id])
+  user       Profile    @relation(fields: [userId], references: [id])
+  curriculum Curriculum @relation(fields: [curriculumId], references: [id])
 
-  @@id([user_id, curriculum_id])
+  @@id([userId, curriculumId])
 }
 
 model UserGradeMapping {
-  user_id  String @db.Uuid
-  grade_id BigInt
+  userId  String @db.Uuid @map("user_id")
+  gradeId BigInt @map("grade_id")
 
-  user  Profile @relation(fields: [user_id], references: [id])
-  grade Grade   @relation(fields: [grade_id], references: [id])
+  user  Profile @relation(fields: [userId], references: [id])
+  grade Grade   @relation(fields: [gradeId], references: [id])
 
-  @@id([user_id, grade_id])
+  @@id([userId, gradeId])
 }
 
 model UserSubjectMapping {
-  user_id    String @db.Uuid
-  subject_id BigInt
+  userId    String @db.Uuid @map("user_id")
+  subjectId BigInt @map("subject_id")
 
-  user    Profile @relation(fields: [user_id], references: [id])
-  subject Subject @relation(fields: [subject_id], references: [id])
+  user    Profile @relation(fields: [userId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
 
-  @@id([user_id, subject_id])
+  @@id([userId, subjectId])
 }

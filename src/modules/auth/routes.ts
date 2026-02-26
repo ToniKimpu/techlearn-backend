@@ -1,21 +1,35 @@
 import crypto from "crypto";
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import passport from "passport";
 
 import bcrypt from "bcrypt";
 import { prisma } from "../../database/prisma.js";
+import { requireAuth } from "../../middlewares/requireAuth.js";
 import { generateAccessToken } from "../../utils/jwt.js";
 import { generateRefreshToken, getSessionExpiry } from "../../utils/session.js";
 
 const router = Router();
 
-router.post("/register", async (req: Request, res: Response) => {
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { message: "Too many attempts, please try again later" },
+});
+
+router.post("/register", authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ message: "Missing fields" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
     const existingAuth = await prisma.authUser.findUnique({ where: { email } });
@@ -34,10 +48,10 @@ router.post("/register", async (req: Request, res: Response) => {
         profile: {
           create: {
             id: profileId,
-            full_name: name,
+            fullName: name,
             email,
             gender: "unspecified",
-            user_type: "student",
+            userType: "student",
           },
         },
       },
@@ -62,7 +76,7 @@ router.post("/register", async (req: Request, res: Response) => {
     const accessToken = generateAccessToken({
       authId: auth.id,
       profileId: auth.profile.id,
-      userType: auth.profile.user_type,
+      userType: auth.profile.userType,
     });
 
     return res.status(201).json({
@@ -71,9 +85,9 @@ router.post("/register", async (req: Request, res: Response) => {
       refreshToken,
       user: {
         id: auth.profile.id,
-        name: auth.profile.full_name,
+        name: auth.profile.fullName,
         email: auth.email,
-        role: auth.profile.user_type,
+        role: auth.profile.userType,
       },
     });
   } catch (err) {
@@ -82,7 +96,7 @@ router.post("/register", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/login", (req: Request, res: Response, next: NextFunction) => {
+router.post("/login", authLimiter, (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate("local", async (err: Error, auth: any, info: { message?: string }) => {
     if (err) return next(err);
     if (!auth) {
@@ -108,7 +122,7 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
       const accessToken = generateAccessToken({
         authId: auth.id,
         profileId: auth.profile.id,
-        userType: auth.profile.user_type,
+        userType: auth.profile.userType,
       });
 
       return res.json({
@@ -117,9 +131,9 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
         refreshToken,
         user: {
           id: auth.profile.id,
-          name: auth.profile.full_name,
+          name: auth.profile.fullName,
           email: auth.email,
-          role: auth.profile.user_type,
+          role: auth.profile.userType,
         },
       });
     } catch (error) {
@@ -142,14 +156,10 @@ router.post("/logout", async (req: Request, res: Response, next: NextFunction) =
   }
 });
 
-router.post("/logout-all", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/logout-all", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.authUser?.authId) {
-      return res.sendStatus(401);
-    }
-
     await prisma.session.deleteMany({
-      where: { authId: req.authUser.authId },
+      where: { authId: req.authUser!.authId },
     });
 
     return res.json({ message: "Logged out from all devices" });
@@ -191,7 +201,7 @@ router.post("/refresh-token", async (req: Request, res: Response, next: NextFunc
     const accessToken = generateAccessToken({
       authId: session.auth.id,
       profileId: session.auth.profile.id,
-      userType: session.auth.profile.user_type,
+      userType: session.auth.profile.userType,
     });
 
     return res.json({
@@ -199,9 +209,9 @@ router.post("/refresh-token", async (req: Request, res: Response, next: NextFunc
       refreshToken: newRefreshToken,
       user: {
         id: session.auth.profile.id,
-        name: session.auth.profile.full_name,
+        name: session.auth.profile.fullName,
         email: session.auth.email,
-        role: session.auth.profile.user_type,
+        role: session.auth.profile.userType,
       },
     });
   } catch (err) {
