@@ -9,7 +9,11 @@
       "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx vitest run 2>&1)",
       "Bash(npx prisma:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm ls:*)",
+      "Bash(git:*)",
+      "Bash(docker:*)"
     ]
   }
 }

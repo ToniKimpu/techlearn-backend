@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: techlearn
+      POSTGRES_PASSWORD: techlearn
+      POSTGRES_DB: techlearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://techlearn:techlearn@db:5432/techlearn
+      DIRECT_URL: postgresql://techlearn:techlearn@db:5432/techlearn
+      JWT_SECRET: change-this-to-a-secure-secret-min-32-chars
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      FRONTEND_URL: http://localhost:3000
+
+volumes:
+  pgdata:
