@@ -7,7 +7,9 @@
       "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx prisma generate 2>&1)",
       "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx tsc --noEmit 2>&1)",
       "Bash(cd D:/SuperSimpleDev/techlearn-backend && npx vitest run 2>&1)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
