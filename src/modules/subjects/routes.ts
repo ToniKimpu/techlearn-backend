@@ -47,8 +47,8 @@ router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res,
     const { page, limit, search, gradeId } = res.locals.query as z.infer<typeof listSubjectsQuery>;
 
     const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${search || "all"}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const where = {
       isDeleted: false,
@@ -85,7 +85,7 @@ router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res,
 
     await setCache(cacheKey, response, 300);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }
@@ -96,8 +96,8 @@ router.get("/subjects/:id", validate({ params: idParam }), async (req, res, next
     const subjectId = BigInt(req.params.id as string);
 
     const cacheKey = `subjects:detail:${subjectId}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const subject = await prisma.subject.findFirst({
       where: { id: subjectId, isDeleted: false },
@@ -110,7 +110,7 @@ router.get("/subjects/:id", validate({ params: idParam }), async (req, res, next
     const response = { data: subject };
     await setCache(cacheKey, response, 600);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }

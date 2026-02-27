@@ -46,18 +46,18 @@ router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req
     const { page, limit, search } = res.locals.query as z.infer<typeof listCurriculumsQuery>;
 
     const cacheKey = `curriculums:list:${page}:${limit}:${search || "all"}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached, hit } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const where: Prisma.CurriculumWhereInput = {
       isDeleted: false,
       ...(search
         ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { description: { contains: search, mode: "insensitive" } },
-            ],
-          }
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        }
         : {}),
     };
 
@@ -83,7 +83,7 @@ router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req
 
     await setCache(cacheKey, response, 300);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }
@@ -94,8 +94,8 @@ router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, n
     const curriculumId = BigInt(req.params.id as string);
 
     const cacheKey = `curriculums:detail:${curriculumId}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const curriculum = await prisma.curriculum.findFirst({
       where: { id: curriculumId, isDeleted: false },
@@ -108,7 +108,7 @@ router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, n
     const response = { data: curriculum };
     await setCache(cacheKey, response, 600);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }

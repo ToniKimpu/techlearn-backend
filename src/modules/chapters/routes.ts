@@ -51,8 +51,8 @@ router.get("/chapters", validate({ query: listChaptersQuery }), async (req, res,
     const { page, limit, search, subjectId } = res.locals.query as z.infer<typeof listChaptersQuery>;
 
     const cacheKey = `chapters:list:${page}:${limit}:${subjectId || "all"}:${search || "all"}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const where = {
       isDeleted: false,
@@ -89,7 +89,7 @@ router.get("/chapters", validate({ query: listChaptersQuery }), async (req, res,
 
     await setCache(cacheKey, response, 300);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }
@@ -100,8 +100,8 @@ router.get("/chapters/:id", validate({ params: idParam }), async (req, res, next
     const chapterId = BigInt(req.params.id as string);
 
     const cacheKey = `chapters:detail:${chapterId}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const chapter = await prisma.chapter.findFirst({
       where: { id: chapterId, isDeleted: false },
@@ -114,7 +114,7 @@ router.get("/chapters/:id", validate({ params: idParam }), async (req, res, next
     const response = { data: chapter };
     await setCache(cacheKey, response, 600);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }

@@ -1,26 +1,26 @@
 import crypto from "crypto";
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import passport from "passport";
 
 import bcrypt from "bcrypt";
 import { prisma } from "../../database/prisma.js";
+import { authLimiter } from "../../middlewares/rateLimiter.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { validate } from "../../middlewares/validate.js";
 import { generateAccessToken } from "../../utils/jwt.js";
-import { generateRefreshToken, getSessionExpiry } from "../../utils/session.js";
+import {
+  cacheSession,
+  type CachedSession,
+  generateRefreshToken,
+  getCachedSession,
+  getSessionExpiry,
+  removeAllCachedSessions,
+  removeCachedSession,
+} from "../../utils/session.js";
 import { loginBody, logoutBody, refreshTokenBody, registerBody } from "./schemas.js";
 
 const router = Router();
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { message: "Too many attempts, please try again later" },
-});
 
 router.post("/auth/register", authLimiter, validate({ body: registerBody }), async (req: Request, res: Response) => {
   try {
@@ -57,13 +57,25 @@ router.post("/auth/register", authLimiter, validate({ body: registerBody }), asy
     }
 
     const refreshToken = generateRefreshToken();
-    await prisma.session.create({
+    const expiresAt = getSessionExpiry(30);
+    const session = await prisma.session.create({
       data: {
         authId: auth.id,
         refreshToken,
-        expiresAt: getSessionExpiry(30),
+        expiresAt,
         ipAddress: req.ip,
         userAgent: req.headers["user-agent"],
+      },
+    });
+
+    await cacheSession(auth.id, refreshToken, {
+      id: session.id,
+      authId: auth.id,
+      refreshToken,
+      expiresAt: expiresAt.toISOString(),
+      auth: {
+        id: auth.id,
+        profile: { id: auth.profile.id, fullName: auth.profile.fullName, email: auth.email, userType: auth.profile.userType },
       },
     });
 
@@ -103,13 +115,25 @@ router.post("/auth/login", authLimiter, validate({ body: loginBody }), (req: Req
       }
 
       const refreshToken = generateRefreshToken();
-      await prisma.session.create({
+      const expiresAt = getSessionExpiry(30);
+      const session = await prisma.session.create({
         data: {
           authId: auth.id,
           refreshToken,
-          expiresAt: getSessionExpiry(30),
+          expiresAt,
           ipAddress: req.ip,
           userAgent: req.headers["user-agent"],
+        },
+      });
+
+      await cacheSession(auth.id, refreshToken, {
+        id: session.id,
+        authId: auth.id,
+        refreshToken,
+        expiresAt: expiresAt.toISOString(),
+        auth: {
+          id: auth.id,
+          profile: { id: auth.profile.id, fullName: auth.profile.fullName, email: auth.email, userType: auth.profile.userType },
         },
       });
 
@@ -140,7 +164,10 @@ router.post("/auth/logout", validate({ body: logoutBody }), async (req: Request,
   try {
     const { refreshToken } = req.body;
 
+    const session = await prisma.session.findUnique({ where: { refreshToken } });
     await prisma.session.deleteMany({ where: { refreshToken } });
+    if (session) await removeCachedSession(session.authId, refreshToken);
+
     return res.json({ message: "Logged out successfully" });
   } catch (err) {
     return next(err);
@@ -149,9 +176,9 @@ router.post("/auth/logout", validate({ body: logoutBody }), async (req: Request,
 
 router.post("/auth/logout-all", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await prisma.session.deleteMany({
-      where: { authId: req.authUser!.authId },
-    });
+    const authId = req.authUser!.authId;
+    await prisma.session.deleteMany({ where: { authId } });
+    await removeAllCachedSessions(authId);
 
     return res.json({ message: "Logged out from all devices" });
   } catch (err) {
@@ -163,43 +190,76 @@ router.post("/auth/refresh-token", validate({ body: refreshTokenBody }), async (
   try {
     const { refreshToken } = req.body;
 
-    const session = await prisma.session.findUnique({
-      where: { refreshToken },
-      include: { auth: { include: { profile: true } } },
-    });
+    // Try Redis first, fall back to DB
+    let sessionData: CachedSession | null = await getCachedSession(refreshToken);
 
-    if (!session?.auth?.profile) {
+    if (!sessionData) {
+      const dbSession = await prisma.session.findUnique({
+        where: { refreshToken },
+        include: { auth: { include: { profile: true } } },
+      });
+
+      if (!dbSession?.auth?.profile) {
+        return res.status(401).json({ message: "Invalid refresh token" });
+      }
+
+      sessionData = {
+        id: dbSession.id,
+        authId: dbSession.authId,
+        refreshToken: dbSession.refreshToken,
+        expiresAt: dbSession.expiresAt.toISOString(),
+        auth: {
+          id: dbSession.auth.id,
+          profile: {
+            id: dbSession.auth.profile.id,
+            fullName: dbSession.auth.profile.fullName,
+            email: dbSession.auth.email,
+            userType: dbSession.auth.profile.userType,
+          },
+        },
+      };
+    }
+
+    if (!sessionData.auth?.profile) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
 
-    if (session.expiresAt < new Date()) {
-      await prisma.session.delete({ where: { id: session.id } });
+    if (new Date(sessionData.expiresAt) < new Date()) {
+      await prisma.session.delete({ where: { id: sessionData.id } });
+      await removeCachedSession(sessionData.authId, refreshToken);
       return res.status(401).json({ message: "Refresh token expired" });
     }
 
+    // Rotate token
     const newRefreshToken = generateRefreshToken();
+    const newExpiry = getSessionExpiry(30);
     await prisma.session.update({
-      where: { id: session.id },
-      data: {
-        refreshToken: newRefreshToken,
-        expiresAt: getSessionExpiry(30),
-      },
+      where: { id: sessionData.id },
+      data: { refreshToken: newRefreshToken, expiresAt: newExpiry },
+    });
+
+    // Remove old cache, set new
+    await removeCachedSession(sessionData.authId, refreshToken);
+    await cacheSession(sessionData.authId, newRefreshToken, {
+      ...sessionData,
+      refreshToken: newRefreshToken,
+      expiresAt: newExpiry.toISOString(),
     });
 
     const accessToken = generateAccessToken({
-      authId: session.auth.id,
-      profileId: session.auth.profile.id,
-      userType: session.auth.profile.userType,
+      authId: sessionData.auth.id,
+      profileId: sessionData.auth.profile.id,
+      userType: sessionData.auth.profile.userType,
     });
 
     return res.json({
       accessToken,
       refreshToken: newRefreshToken,
       user: {
-        id: session.auth.profile.id,
-        name: session.auth.profile.fullName,
-        email: session.auth.email,
-        role: session.auth.profile.userType,
+        id: sessionData.auth.profile.id,
+        name: sessionData.auth.profile.fullName,
+        email: sessionData.auth.profile.email,
+        role: sessionData.auth.profile.userType,
       },
     });
   } catch (err) {

@@ -47,8 +47,8 @@ router.get("/grades", validate({ query: listGradesQuery }), async (req, res, nex
     const { page, limit, search, curriculumId } = res.locals.query as z.infer<typeof listGradesQuery>;
 
     const cacheKey = `grades:list:${page}:${limit}:${curriculumId || "all"}:${search || "all"}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const where = {
       isDeleted: false,
@@ -85,7 +85,7 @@ router.get("/grades", validate({ query: listGradesQuery }), async (req, res, nex
 
     await setCache(cacheKey, response, 300);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }
@@ -96,8 +96,8 @@ router.get("/grades/:id", validate({ params: idParam }), async (req, res, next) 
     const gradeId = BigInt(req.params.id as string);
 
     const cacheKey = `grades:detail:${gradeId}`;
-    const cached = await getCache(cacheKey);
-    if (cached) return res.json(cached);
+    const { data: cached } = await getCache(cacheKey);
+    if (cached) return res.set("X-Cache", "HIT").json(cached);
 
     const grade = await prisma.grade.findFirst({
       where: { id: gradeId, isDeleted: false },
@@ -110,7 +110,7 @@ router.get("/grades/:id", validate({ params: idParam }), async (req, res, next) 
     const response = { data: grade };
     await setCache(cacheKey, response, 600);
 
-    return res.json(response);
+    return res.set("X-Cache", "MISS").json(response);
   } catch (error) {
     return next(error);
   }

@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 
+import { globalLimiter } from "./middlewares/rateLimiter.js";
 import passport from "./config/passport.js";
 import authRoutes from "./modules/auth/routes.js";
 import chapterRoutes from "./modules/chapters/routes.js";
@@ -28,6 +29,7 @@ app.use(
 );
 
 app.use(passport.initialize());
+app.use(globalLimiter);
 
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", curriculumRoutes);

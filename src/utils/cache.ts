@@ -1,13 +1,19 @@
 import { redis } from "../config/redis.js";
 
-export async function getCache<T>(key: string): Promise<T | null> {
-  if (!redis) return null;
+export interface CacheResult<T> {
+  data: T | null;
+  hit: boolean;
+}
+
+export async function getCache<T>(key: string): Promise<CacheResult<T>> {
+  if (!redis) return { data: null, hit: false };
 
   try {
-    const data = await redis.get(key);
-    return data ? JSON.parse(data) : null;
+    const raw = await redis.get(key);
+    if (raw) return { data: JSON.parse(raw), hit: true };
+    return { data: null, hit: false };
   } catch {
-    return null;
+    return { data: null, hit: false };
   }
 }
 
