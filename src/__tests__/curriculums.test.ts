@@ -21,6 +21,9 @@ vi.mock("../database/prisma.js", () => ({
   },
 }));
 
+// Mock Redis — no real Redis needed for tests
+vi.mock("../config/redis.js", () => ({ redis: null }));
+
 // Mock passport to avoid DB connection during import
 vi.mock("../config/passport.js", () => {
   const passport = {

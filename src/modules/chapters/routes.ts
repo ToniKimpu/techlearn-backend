@@ -6,6 +6,7 @@ import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
+import { getCache, invalidateCache, setCache } from "../../utils/cache.js";
 import { createChapterBody, listChaptersQuery, updateChapterBody } from "./schemas.js";
 
 const router = Router();
@@ -37,6 +38,8 @@ router.post("/chapters", requireRole("admin"), validate({ body: createChapterBod
       },
     });
 
+    await invalidateCache("chapters:*");
+
     return res.status(201).json({ message: "Chapter created", data: chapter });
   } catch (error) {
     return next(error);
@@ -46,6 +49,10 @@ router.post("/chapters", requireRole("admin"), validate({ body: createChapterBod
 router.get("/chapters", validate({ query: listChaptersQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, subjectId } = res.locals.query as z.infer<typeof listChaptersQuery>;
+
+    const cacheKey = `chapters:list:${page}:${limit}:${subjectId || "all"}:${search || "all"}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
 
     const where = {
       isDeleted: false,
@@ -70,7 +77,7 @@ router.get("/chapters", validate({ query: listChaptersQuery }), async (req, res,
       prisma.chapter.count({ where }),
     ]);
 
-    return res.json({
+    const response = {
       data: items,
       pagination: {
         page,
@@ -78,7 +85,11 @@ router.get("/chapters", validate({ query: listChaptersQuery }), async (req, res,
         total,
         totalPages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    await setCache(cacheKey, response, 300);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -88,6 +99,10 @@ router.get("/chapters/:id", validate({ params: idParam }), async (req, res, next
   try {
     const chapterId = BigInt(req.params.id as string);
 
+    const cacheKey = `chapters:detail:${chapterId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     const chapter = await prisma.chapter.findFirst({
       where: { id: chapterId, isDeleted: false },
     });
@@ -96,7 +111,10 @@ router.get("/chapters/:id", validate({ params: idParam }), async (req, res, next
       return res.status(404).json({ message: "Chapter not found" });
     }
 
-    return res.json({ data: chapter });
+    const response = { data: chapter };
+    await setCache(cacheKey, response, 600);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -139,6 +157,8 @@ router.put("/chapters/:id", requireRole("admin"), validate({ params: idParam, bo
       },
     });
 
+    await invalidateCache("chapters:*");
+
     return res.json({ message: "Chapter updated", data: updatedChapter });
   } catch (error) {
     return next(error);
@@ -161,6 +181,8 @@ router.delete("/chapters/:id", requireRole("admin"), validate({ params: idParam 
       where: { id: chapterId },
       data: { isDeleted: true },
     });
+
+    await invalidateCache("chapters:*");
 
     return res.json({ message: "Chapter deleted" });
   } catch (error) {

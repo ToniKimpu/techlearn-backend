@@ -7,6 +7,8 @@ beforeAll(() => {
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-key";
 });
 
+vi.mock("../config/redis.js", () => ({ redis: null }));
+
 vi.mock("../database/prisma.js", () => ({
   prisma: {
     authUser: {

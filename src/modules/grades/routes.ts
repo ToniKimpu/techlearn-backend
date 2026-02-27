@@ -6,6 +6,7 @@ import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
+import { getCache, invalidateCache, setCache } from "../../utils/cache.js";
 import { createGradeBody, listGradesQuery, updateGradeBody } from "./schemas.js";
 
 const router = Router();
@@ -33,6 +34,8 @@ router.post("/grades", requireRole("admin"), validate({ body: createGradeBody })
       },
     });
 
+    await invalidateCache("grades:*");
+
     return res.status(201).json({ message: "Grade created", data: grade });
   } catch (error) {
     return next(error);
@@ -42,6 +45,10 @@ router.post("/grades", requireRole("admin"), validate({ body: createGradeBody })
 router.get("/grades", validate({ query: listGradesQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, curriculumId } = res.locals.query as z.infer<typeof listGradesQuery>;
+
+    const cacheKey = `grades:list:${page}:${limit}:${curriculumId || "all"}:${search || "all"}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
 
     const where = {
       isDeleted: false,
@@ -66,7 +73,7 @@ router.get("/grades", validate({ query: listGradesQuery }), async (req, res, nex
       prisma.grade.count({ where }),
     ]);
 
-    return res.json({
+    const response = {
       data: items,
       pagination: {
         page,
@@ -74,7 +81,11 @@ router.get("/grades", validate({ query: listGradesQuery }), async (req, res, nex
         total,
         totalPages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    await setCache(cacheKey, response, 300);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -84,6 +95,10 @@ router.get("/grades/:id", validate({ params: idParam }), async (req, res, next) 
   try {
     const gradeId = BigInt(req.params.id as string);
 
+    const cacheKey = `grades:detail:${gradeId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     const grade = await prisma.grade.findFirst({
       where: { id: gradeId, isDeleted: false },
     });
@@ -92,7 +107,10 @@ router.get("/grades/:id", validate({ params: idParam }), async (req, res, next) 
       return res.status(404).json({ message: "Grade not found" });
     }
 
-    return res.json({ data: grade });
+    const response = { data: grade };
+    await setCache(cacheKey, response, 600);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -131,6 +149,8 @@ router.put("/grades/:id", requireRole("admin"), validate({ params: idParam, body
       },
     });
 
+    await invalidateCache("grades:*");
+
     return res.json({ message: "Grade updated", data: updatedGrade });
   } catch (error) {
     return next(error);
@@ -153,6 +173,8 @@ router.delete("/grades/:id", requireRole("admin"), validate({ params: idParam })
       where: { id: gradeId },
       data: { isDeleted: true },
     });
+
+    await invalidateCache("grades:*");
 
     return res.json({ message: "Grade deleted" });
   } catch (error) {

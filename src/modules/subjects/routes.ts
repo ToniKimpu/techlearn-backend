@@ -6,6 +6,7 @@ import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
+import { getCache, invalidateCache, setCache } from "../../utils/cache.js";
 import { createSubjectBody, listSubjectsQuery, updateSubjectBody } from "./schemas.js";
 
 const router = Router();
@@ -33,6 +34,8 @@ router.post("/subjects", requireRole("admin"), validate({ body: createSubjectBod
       },
     });
 
+    await invalidateCache("subjects:*");
+
     return res.status(201).json({ message: "Subject created", data: subject });
   } catch (error) {
     return next(error);
@@ -42,6 +45,10 @@ router.post("/subjects", requireRole("admin"), validate({ body: createSubjectBod
 router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, gradeId } = res.locals.query as z.infer<typeof listSubjectsQuery>;
+
+    const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${search || "all"}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
 
     const where = {
       isDeleted: false,
@@ -66,7 +73,7 @@ router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res,
       prisma.subject.count({ where }),
     ]);
 
-    return res.json({
+    const response = {
       data: items,
       pagination: {
         page,
@@ -74,7 +81,11 @@ router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res,
         total,
         totalPages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    await setCache(cacheKey, response, 300);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -84,6 +95,10 @@ router.get("/subjects/:id", validate({ params: idParam }), async (req, res, next
   try {
     const subjectId = BigInt(req.params.id as string);
 
+    const cacheKey = `subjects:detail:${subjectId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     const subject = await prisma.subject.findFirst({
       where: { id: subjectId, isDeleted: false },
     });
@@ -92,7 +107,10 @@ router.get("/subjects/:id", validate({ params: idParam }), async (req, res, next
       return res.status(404).json({ message: "Subject not found" });
     }
 
-    return res.json({ data: subject });
+    const response = { data: subject };
+    await setCache(cacheKey, response, 600);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -131,6 +149,8 @@ router.put("/subjects/:id", requireRole("admin"), validate({ params: idParam, bo
       },
     });
 
+    await invalidateCache("subjects:*");
+
     return res.json({ message: "Subject updated", data: updatedSubject });
   } catch (error) {
     return next(error);
@@ -153,6 +173,8 @@ router.delete("/subjects/:id", requireRole("admin"), validate({ params: idParam 
       where: { id: subjectId },
       data: { isDeleted: true },
     });
+
+    await invalidateCache("subjects:*");
 
     return res.json({ message: "Subject deleted" });
   } catch (error) {

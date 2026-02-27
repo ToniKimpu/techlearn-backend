@@ -7,6 +7,7 @@ import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
+import { getCache, invalidateCache, setCache } from "../../utils/cache.js";
 import { createCurriculumBody, listCurriculumsQuery, updateCurriculumBody } from "./schemas.js";
 
 const router = Router();
@@ -25,6 +26,8 @@ router.post("/curriculums", requireRole("admin"), validate({ body: createCurricu
       },
     });
 
+    await invalidateCache("curriculums:*");
+
     return res.status(201).json({ message: "Curriculum created", data: curriculum });
   } catch (error) {
     if (
@@ -41,6 +44,10 @@ router.post("/curriculums", requireRole("admin"), validate({ body: createCurricu
 router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req, res, next) => {
   try {
     const { page, limit, search } = res.locals.query as z.infer<typeof listCurriculumsQuery>;
+
+    const cacheKey = `curriculums:list:${page}:${limit}:${search || "all"}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
 
     const where: Prisma.CurriculumWhereInput = {
       isDeleted: false,
@@ -64,7 +71,7 @@ router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req
       prisma.curriculum.count({ where }),
     ]);
 
-    return res.json({
+    const response = {
       data: items,
       pagination: {
         page,
@@ -72,7 +79,11 @@ router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req
         total,
         totalPages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    await setCache(cacheKey, response, 300);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -82,6 +93,10 @@ router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, n
   try {
     const curriculumId = BigInt(req.params.id as string);
 
+    const cacheKey = `curriculums:detail:${curriculumId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     const curriculum = await prisma.curriculum.findFirst({
       where: { id: curriculumId, isDeleted: false },
     });
@@ -90,7 +105,10 @@ router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, n
       return res.status(404).json({ message: "Curriculum not found" });
     }
 
-    return res.json({ data: curriculum });
+    const response = { data: curriculum };
+    await setCache(cacheKey, response, 600);
+
+    return res.json(response);
   } catch (error) {
     return next(error);
   }
@@ -117,6 +135,8 @@ router.put("/curriculums/:id", requireRole("admin"), validate({ params: idParam,
         ...(image !== undefined ? { image } : {}),
       },
     });
+
+    await invalidateCache("curriculums:*");
 
     return res.json({ message: "Curriculum updated", data: updatedCurriculum });
   } catch (error) {
@@ -147,6 +167,8 @@ router.delete("/curriculums/:id", requireRole("admin"), validate({ params: idPar
       where: { id: curriculumId },
       data: { isDeleted: true },
     });
+
+    await invalidateCache("curriculums:*");
 
     return res.json({ message: "Curriculum deleted" });
   } catch (error) {
