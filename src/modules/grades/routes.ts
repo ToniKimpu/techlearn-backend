@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createGradeBody, listGradesQuery, updateGradeBody } from "./schemas.js";
@@ -11,7 +12,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/grades", validate({ body: createGradeBody }), async (req, res, next) => {
+router.post("/grades", requireRole("admin"), validate({ body: createGradeBody }), async (req, res, next) => {
   try {
     const { name, description, image, curriculumId } = req.body as z.infer<typeof createGradeBody>;
 
@@ -97,7 +98,7 @@ router.get("/grades/:id", validate({ params: idParam }), async (req, res, next) 
   }
 });
 
-router.put("/grades/:id", validate({ params: idParam, body: updateGradeBody }), async (req, res, next) => {
+router.put("/grades/:id", requireRole("admin"), validate({ params: idParam, body: updateGradeBody }), async (req, res, next) => {
   try {
     const gradeId = BigInt(req.params.id as string);
     const { name, description, image, curriculumId } = req.body as z.infer<typeof updateGradeBody>;
@@ -136,7 +137,7 @@ router.put("/grades/:id", validate({ params: idParam, body: updateGradeBody }), 
   }
 });
 
-router.delete("/grades/:id", validate({ params: idParam }), async (req, res, next) => {
+router.delete("/grades/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
   try {
     const gradeId = BigInt(req.params.id as string);
 

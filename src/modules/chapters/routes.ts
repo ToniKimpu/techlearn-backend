@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createChapterBody, listChaptersQuery, updateChapterBody } from "./schemas.js";
@@ -11,7 +12,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/chapters", validate({ body: createChapterBody }), async (req, res, next) => {
+router.post("/chapters", requireRole("admin"), validate({ body: createChapterBody }), async (req, res, next) => {
   try {
     const { title, sortOrder, imageUrl, label, content, teacherGuide, subjectId } =
       req.body as z.infer<typeof createChapterBody>;
@@ -101,7 +102,7 @@ router.get("/chapters/:id", validate({ params: idParam }), async (req, res, next
   }
 });
 
-router.put("/chapters/:id", validate({ params: idParam, body: updateChapterBody }), async (req, res, next) => {
+router.put("/chapters/:id", requireRole("admin"), validate({ params: idParam, body: updateChapterBody }), async (req, res, next) => {
   try {
     const chapterId = BigInt(req.params.id as string);
     const { title, sortOrder, imageUrl, label, content, teacherGuide, subjectId } =
@@ -144,7 +145,7 @@ router.put("/chapters/:id", validate({ params: idParam, body: updateChapterBody 
   }
 });
 
-router.delete("/chapters/:id", validate({ params: idParam }), async (req, res, next) => {
+router.delete("/chapters/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
   try {
     const chapterId = BigInt(req.params.id as string);
 

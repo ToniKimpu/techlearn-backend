@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createSubjectBody, listSubjectsQuery, updateSubjectBody } from "./schemas.js";
@@ -11,7 +12,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/subjects", validate({ body: createSubjectBody }), async (req, res, next) => {
+router.post("/subjects", requireRole("admin"), validate({ body: createSubjectBody }), async (req, res, next) => {
   try {
     const { name, description, image, gradeId } = req.body as z.infer<typeof createSubjectBody>;
 
@@ -97,7 +98,7 @@ router.get("/subjects/:id", validate({ params: idParam }), async (req, res, next
   }
 });
 
-router.put("/subjects/:id", validate({ params: idParam, body: updateSubjectBody }), async (req, res, next) => {
+router.put("/subjects/:id", requireRole("admin"), validate({ params: idParam, body: updateSubjectBody }), async (req, res, next) => {
   try {
     const subjectId = BigInt(req.params.id as string);
     const { name, description, image, gradeId } = req.body as z.infer<typeof updateSubjectBody>;
@@ -136,7 +137,7 @@ router.put("/subjects/:id", validate({ params: idParam, body: updateSubjectBody 
   }
 });
 
-router.delete("/subjects/:id", validate({ params: idParam }), async (req, res, next) => {
+router.delete("/subjects/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
   try {
     const subjectId = BigInt(req.params.id as string);
 

@@ -4,6 +4,7 @@ import type { z } from "zod";
 
 import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createCurriculumBody, listCurriculumsQuery, updateCurriculumBody } from "./schemas.js";
@@ -12,7 +13,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/curriculums", validate({ body: createCurriculumBody }), async (req, res, next) => {
+router.post("/curriculums", requireRole("admin"), validate({ body: createCurriculumBody }), async (req, res, next) => {
   try {
     const { name, description, image } = req.body as z.infer<typeof createCurriculumBody>;
 
@@ -95,7 +96,7 @@ router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, n
   }
 });
 
-router.put("/curriculums/:id", validate({ params: idParam, body: updateCurriculumBody }), async (req, res, next) => {
+router.put("/curriculums/:id", requireRole("admin"), validate({ params: idParam, body: updateCurriculumBody }), async (req, res, next) => {
   try {
     const curriculumId = BigInt(req.params.id as string);
     const { name, description, image } = req.body as z.infer<typeof updateCurriculumBody>;
@@ -130,7 +131,7 @@ router.put("/curriculums/:id", validate({ params: idParam, body: updateCurriculu
   }
 });
 
-router.delete("/curriculums/:id", validate({ params: idParam }), async (req, res, next) => {
+router.delete("/curriculums/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
   try {
     const curriculumId = BigInt(req.params.id as string);
 
