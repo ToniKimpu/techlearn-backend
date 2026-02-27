@@ -7,8 +7,10 @@ import passport from "passport";
 import bcrypt from "bcrypt";
 import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { validate } from "../../middlewares/validate.js";
 import { generateAccessToken } from "../../utils/jwt.js";
 import { generateRefreshToken, getSessionExpiry } from "../../utils/session.js";
+import { loginBody, logoutBody, refreshTokenBody, registerBody } from "./schemas.js";
 
 const router = Router();
 
@@ -20,17 +22,9 @@ const authLimiter = rateLimit({
   message: { message: "Too many attempts, please try again later" },
 });
 
-router.post("/register", authLimiter, async (req: Request, res: Response) => {
+router.post("/auth/register", authLimiter, validate({ body: registerBody }), async (req: Request, res: Response) => {
   try {
     const { email, password, name } = req.body;
-
-    if (!email || !password || !name) {
-      return res.status(400).json({ message: "Missing fields" });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
 
     const existingAuth = await prisma.authUser.findUnique({ where: { email } });
     if (existingAuth) {
@@ -96,7 +90,7 @@ router.post("/register", authLimiter, async (req: Request, res: Response) => {
   }
 });
 
-router.post("/login", authLimiter, (req: Request, res: Response, next: NextFunction) => {
+router.post("/auth/login", authLimiter, validate({ body: loginBody }), (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate("local", async (err: Error, auth: any, info: { message?: string }) => {
     if (err) return next(err);
     if (!auth) {
@@ -142,12 +136,9 @@ router.post("/login", authLimiter, (req: Request, res: Response, next: NextFunct
   })(req, res, next);
 });
 
-router.post("/logout", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/auth/logout", validate({ body: logoutBody }), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ message: "Refresh token required" });
-    }
 
     await prisma.session.deleteMany({ where: { refreshToken } });
     return res.json({ message: "Logged out successfully" });
@@ -156,7 +147,7 @@ router.post("/logout", async (req: Request, res: Response, next: NextFunction) =
   }
 });
 
-router.post("/logout-all", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/auth/logout-all", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     await prisma.session.deleteMany({
       where: { authId: req.authUser!.authId },
@@ -168,12 +159,9 @@ router.post("/logout-all", requireAuth, async (req: Request, res: Response, next
   }
 });
 
-router.post("/refresh-token", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/auth/refresh-token", validate({ body: refreshTokenBody }), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ message: "Refresh token required" });
-    }
 
     const session = await prisma.session.findUnique({
       where: { refreshToken },

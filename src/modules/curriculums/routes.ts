@@ -1,62 +1,26 @@
 import { Prisma } from "../../../generated/prisma/index.js";
 import { Router } from "express";
+import type { z } from "zod";
 
 import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
+import { validate } from "../../middlewares/validate.js";
+import { idParam } from "../../schemas/shared.js";
+import { createCurriculumBody, listCurriculumsQuery, updateCurriculumBody } from "./schemas.js";
 
 const router = Router();
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 10;
-const MAX_LIMIT = 100;
-
-function parsePositiveInt(value: string | undefined, fallback: number): number {
-  if (!value) {
-    return fallback;
-  }
-
-  const parsedValue = Number.parseInt(value, 10);
-  if (Number.isNaN(parsedValue) || parsedValue < 1) {
-    return fallback;
-  }
-
-  return parsedValue;
-}
-
-function parseCurriculumId(value: string): bigint | null {
-  try {
-    const id = BigInt(value);
-    if (id < 1n) {
-      return null;
-    }
-
-    return id;
-  } catch {
-    return null;
-  }
-}
-
 router.use(requireAuth);
 
-router.post("/curriculums", async (req, res, next) => {
+router.post("/curriculums", validate({ body: createCurriculumBody }), async (req, res, next) => {
   try {
-    const { name, description, image } = req.body as {
-      name?: string;
-      description?: string;
-      image?: string;
-    };
-
-    const normalizedName = name?.trim();
-
-    if (!normalizedName) {
-      return res.status(400).json({ message: "Name is required" });
-    }
+    const { name, description, image } = req.body as z.infer<typeof createCurriculumBody>;
 
     const curriculum = await prisma.curriculum.create({
       data: {
-        name: normalizedName,
-        description: description?.trim() || null,
-        image: image?.trim() || "",
+        name,
+        description: description || null,
+        image: image || "",
       },
     });
 
@@ -73,30 +37,17 @@ router.post("/curriculums", async (req, res, next) => {
   }
 });
 
-router.get("/curriculums", async (req, res, next) => {
+router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req, res, next) => {
   try {
-    const page = parsePositiveInt(req.query.page as string | undefined, DEFAULT_PAGE);
-    const requestedLimit = parsePositiveInt(req.query.limit as string | undefined, DEFAULT_LIMIT);
-    const limit = Math.min(requestedLimit, MAX_LIMIT);
-    const search = (req.query.search as string | undefined)?.trim();
+    const { page, limit, search } = res.locals.query as z.infer<typeof listCurriculumsQuery>;
 
     const where: Prisma.CurriculumWhereInput = {
       isDeleted: false,
       ...(search
         ? {
             OR: [
-              {
-                name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                description: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
+              { name: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -126,19 +77,12 @@ router.get("/curriculums", async (req, res, next) => {
   }
 });
 
-router.get("/curriculums/:id", async (req, res, next) => {
+router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, next) => {
   try {
-    const curriculumId = parseCurriculumId(req.params.id);
-
-    if (!curriculumId) {
-      return res.status(400).json({ message: "Invalid curriculum id" });
-    }
+    const curriculumId = BigInt(req.params.id as string);
 
     const curriculum = await prisma.curriculum.findFirst({
-      where: {
-        id: curriculumId,
-        isDeleted: false,
-      },
+      where: { id: curriculumId, isDeleted: false },
     });
 
     if (!curriculum) {
@@ -151,31 +95,13 @@ router.get("/curriculums/:id", async (req, res, next) => {
   }
 });
 
-router.put("/curriculums/:id", async (req, res, next) => {
+router.put("/curriculums/:id", validate({ params: idParam, body: updateCurriculumBody }), async (req, res, next) => {
   try {
-    const curriculumId = parseCurriculumId(req.params.id);
-
-    if (!curriculumId) {
-      return res.status(400).json({ message: "Invalid curriculum id" });
-    }
-
-    const { name, description, image } = req.body as {
-      name?: string;
-      description?: string;
-      image?: string;
-    };
-
-    const normalizedName = name?.trim();
-
-    if (name !== undefined && !normalizedName) {
-      return res.status(400).json({ message: "Name cannot be empty" });
-    }
+    const curriculumId = BigInt(req.params.id as string);
+    const { name, description, image } = req.body as z.infer<typeof updateCurriculumBody>;
 
     const existingCurriculum = await prisma.curriculum.findFirst({
-      where: {
-        id: curriculumId,
-        isDeleted: false,
-      },
+      where: { id: curriculumId, isDeleted: false },
     });
 
     if (!existingCurriculum) {
@@ -185,9 +111,9 @@ router.put("/curriculums/:id", async (req, res, next) => {
     const updatedCurriculum = await prisma.curriculum.update({
       where: { id: curriculumId },
       data: {
-        ...(normalizedName !== undefined ? { name: normalizedName } : {}),
-        ...(description !== undefined ? { description: description.trim() || null } : {}),
-        ...(image !== undefined ? { image: image.trim() } : {}),
+        ...(name !== undefined ? { name } : {}),
+        ...(description !== undefined ? { description: description || null } : {}),
+        ...(image !== undefined ? { image } : {}),
       },
     });
 
@@ -204,19 +130,12 @@ router.put("/curriculums/:id", async (req, res, next) => {
   }
 });
 
-router.delete("/curriculums/:id", async (req, res, next) => {
+router.delete("/curriculums/:id", validate({ params: idParam }), async (req, res, next) => {
   try {
-    const curriculumId = parseCurriculumId(req.params.id);
-
-    if (!curriculumId) {
-      return res.status(400).json({ message: "Invalid curriculum id" });
-    }
+    const curriculumId = BigInt(req.params.id as string);
 
     const existingCurriculum = await prisma.curriculum.findFirst({
-      where: {
-        id: curriculumId,
-        isDeleted: false,
-      },
+      where: { id: curriculumId, isDeleted: false },
     });
 
     if (!existingCurriculum) {

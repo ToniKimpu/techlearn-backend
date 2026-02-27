@@ -4,7 +4,10 @@ import helmet from "helmet";
 
 import passport from "./config/passport.js";
 import authRoutes from "./modules/auth/routes.js";
+import chapterRoutes from "./modules/chapters/routes.js";
 import curriculumRoutes from "./modules/curriculums/routes.js";
+import gradeRoutes from "./modules/grades/routes.js";
+import subjectRoutes from "./modules/subjects/routes.js";
 import uploadRoutes from "./modules/upload/routes.js";
 
 (BigInt.prototype as any).toJSON = function () {
@@ -26,9 +29,12 @@ app.use(
 
 app.use(passport.initialize());
 
-app.use("/auth", authRoutes);
-app.use("/", curriculumRoutes);
-app.use("/", uploadRoutes);
+app.use("/api/v1", authRoutes);
+app.use("/api/v1", curriculumRoutes);
+app.use("/api/v1", gradeRoutes);
+app.use("/api/v1", subjectRoutes);
+app.use("/api/v1", chapterRoutes);
+app.use("/api/v1", uploadRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("API running");
