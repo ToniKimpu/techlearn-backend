@@ -9,6 +9,7 @@ import chapterRoutes from "./modules/chapters/routes.js";
 import curriculumRoutes from "./modules/curriculums/routes.js";
 import gradeRoutes from "./modules/grades/routes.js";
 import subjectRoutes from "./modules/subjects/routes.js";
+import emailRoutes from "./modules/email/routes.js";
 import uploadRoutes from "./modules/upload/routes.js";
 
 (BigInt.prototype as any).toJSON = function () {
@@ -37,6 +38,7 @@ app.use("/api/v1", gradeRoutes);
 app.use("/api/v1", subjectRoutes);
 app.use("/api/v1", chapterRoutes);
 app.use("/api/v1", uploadRoutes);
+app.use("/api/v1", emailRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("API running");

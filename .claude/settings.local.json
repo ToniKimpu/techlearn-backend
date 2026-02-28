@@ -13,7 +13,11 @@
       "Bash(npx vitest:*)",
       "Bash(npm ls:*)",
       "Bash(git:*)",
-      "Bash(docker:*)"
+      "Bash(docker:*)",
+      "Bash(timeout 10 npx tsx:*)",
+      "Bash(wc:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)"
     ]
   }
 }

@@ -1,0 +1,41 @@
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+import { globalLimiter } from "./middlewares/rateLimiter.js";
+import passport from "./config/passport.js";
+import authRoutes from "./modules/auth/routes.js";
+import chapterRoutes from "./modules/chapters/routes.js";
+import curriculumRoutes from "./modules/curriculums/routes.js";
+import gradeRoutes from "./modules/grades/routes.js";
+import subjectRoutes from "./modules/subjects/routes.js";
+import emailRoutes from "./modules/email/routes.js";
+import uploadRoutes from "./modules/upload/routes.js";
+BigInt.prototype.toJSON = function () {
+    return this.toString();
+};
+const app = express();
+export const CORS_ORIGIN = process.env.FRONTEND_URL || "http://localhost:3000";
+app.use(helmet());
+app.use(express.json());
+app.use(cors({
+    origin: CORS_ORIGIN,
+    credentials: true,
+}));
+app.use(passport.initialize());
+app.use(globalLimiter);
+app.use("/api/v1", authRoutes);
+app.use("/api/v1", curriculumRoutes);
+app.use("/api/v1", gradeRoutes);
+app.use("/api/v1", subjectRoutes);
+app.use("/api/v1", chapterRoutes);
+app.use("/api/v1", uploadRoutes);
+app.use("/api/v1", emailRoutes);
+app.get("/", (_req, res) => {
+    res.send("API running");
+});
+app.use((err, _req, res, _next) => {
+    console.error(err.stack || err);
+    res.status(500).json({ error: "Internal Server Error" });
+});
+export default app;
+//# sourceMappingURL=app.js.map

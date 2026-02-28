@@ -1,4 +1,5 @@
 import "./config/env.js";
+import "./config/queue.js";
 import http from "http";
 import { Server } from "socket.io";
 import app, { CORS_ORIGIN } from "./app.js";

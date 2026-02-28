@@ -2,6 +2,14 @@ import Redis from "ioredis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
+const parsedUrl = new URL(REDIS_URL);
+export const redisConnectionOptions = {
+  host: parsedUrl.hostname,
+  port: parseInt(parsedUrl.port || "6379"),
+  password: parsedUrl.password || undefined,
+  maxRetriesPerRequest: null as null, // Required by BullMQ
+};
+
 let redis: Redis | null = null;
 
 try {

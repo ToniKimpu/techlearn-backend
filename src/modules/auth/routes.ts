@@ -18,6 +18,7 @@ import {
   removeAllCachedSessions,
   removeCachedSession,
 } from "../../utils/session.js";
+import { queueWelcomeEmail } from "../email/producer.js";
 import { loginBody, logoutBody, refreshTokenBody, registerBody } from "./schemas.js";
 
 const router = Router();
@@ -84,6 +85,8 @@ router.post("/auth/register", authLimiter, validate({ body: registerBody }), asy
       profileId: auth.profile.id,
       userType: auth.profile.userType,
     });
+
+    queueWelcomeEmail(email, name).catch(() => {});
 
     return res.status(201).json({
       message: "Registered & logged in",

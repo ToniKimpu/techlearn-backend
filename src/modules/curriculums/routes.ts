@@ -27,7 +27,6 @@ router.post("/curriculums", requireRole("admin"), validate({ body: createCurricu
     });
 
     await invalidateCache("curriculums:*");
-
     return res.status(201).json({ message: "Curriculum created", data: curriculum });
   } catch (error) {
     if (
