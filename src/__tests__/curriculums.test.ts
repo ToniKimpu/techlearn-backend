@@ -90,7 +90,7 @@ describe("Curriculums API", () => {
         .send({ name: "Test Curriculum" });
 
       expect(res.status).toBe(403);
-      expect(res.body.message).toBe("Forbidden");
+      expect(res.body.message).toBe("Forbidden: insufficient permissions");
     });
 
     it("returns 403 for teacher", async () => {

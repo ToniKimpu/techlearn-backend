@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
-import { requireRole } from "../../middlewares/requireRole.js";
+import { requirePermission } from "../../middlewares/requirePermission.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createCurriculumBody, listCurriculumsQuery, updateCurriculumBody } from "./schemas.js";
@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/curriculums", requireRole("admin"), validate({ body: createCurriculumBody }), async (req, res, next) => {
+router.post("/curriculums", requirePermission("curriculum:write"), validate({ body: createCurriculumBody }), async (req, res, next) => {
   try {
     const { name, description, image } = req.body as z.infer<typeof createCurriculumBody>;
     const curriculum = await curriculumService.create({ name, description, image });
@@ -41,7 +41,7 @@ router.get("/curriculums/:id", validate({ params: idParam }), async (req, res, n
   }
 });
 
-router.put("/curriculums/:id", requireRole("admin"), validate({ params: idParam, body: updateCurriculumBody }), async (req, res, next) => {
+router.put("/curriculums/:id", requirePermission("curriculum:write"), validate({ params: idParam, body: updateCurriculumBody }), async (req, res, next) => {
   try {
     const { name, description, image } = req.body as z.infer<typeof updateCurriculumBody>;
     const updated = await curriculumService.update(BigInt(req.params.id as string), { name, description, image });
@@ -51,7 +51,7 @@ router.put("/curriculums/:id", requireRole("admin"), validate({ params: idParam,
   }
 });
 
-router.delete("/curriculums/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
+router.delete("/curriculums/:id", requirePermission("curriculum:write"), validate({ params: idParam }), async (req, res, next) => {
   try {
     await curriculumService.softDelete(BigInt(req.params.id as string));
     return res.json({ message: "Curriculum deleted" });

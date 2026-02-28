@@ -2,6 +2,7 @@ import crypto from "crypto";
 
 import bcrypt from "bcrypt";
 
+import { ROLES } from "../../config/roles.js";
 import { prisma } from "../../database/prisma.js";
 import { generateAccessToken } from "../../utils/jwt.js";
 import { AppError } from "../../utils/errors.js";
@@ -100,7 +101,7 @@ async function register(
           fullName: name,
           email,
           gender: "unspecified",
-          userType: "student",
+          userType: ROLES.student,
         },
       },
     },

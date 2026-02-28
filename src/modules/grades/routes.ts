@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
-import { requireRole } from "../../middlewares/requireRole.js";
+import { requirePermission } from "../../middlewares/requirePermission.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createGradeBody, listGradesQuery, updateGradeBody } from "./schemas.js";
@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/grades", requireRole("admin"), validate({ body: createGradeBody }), async (req, res, next) => {
+router.post("/grades", requirePermission("grade:write"), validate({ body: createGradeBody }), async (req, res, next) => {
   try {
     const { name, description, image, curriculumId } = req.body as z.infer<typeof createGradeBody>;
     const grade = await gradeService.create({ name, description, image, curriculumId });
@@ -41,7 +41,7 @@ router.get("/grades/:id", validate({ params: idParam }), async (req, res, next) 
   }
 });
 
-router.put("/grades/:id", requireRole("admin"), validate({ params: idParam, body: updateGradeBody }), async (req, res, next) => {
+router.put("/grades/:id", requirePermission("grade:write"), validate({ params: idParam, body: updateGradeBody }), async (req, res, next) => {
   try {
     const { name, description, image, curriculumId } = req.body as z.infer<typeof updateGradeBody>;
     const updated = await gradeService.update(BigInt(req.params.id as string), { name, description, image, curriculumId });
@@ -51,7 +51,7 @@ router.put("/grades/:id", requireRole("admin"), validate({ params: idParam, body
   }
 });
 
-router.delete("/grades/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
+router.delete("/grades/:id", requirePermission("grade:write"), validate({ params: idParam }), async (req, res, next) => {
   try {
     await gradeService.softDelete(BigInt(req.params.id as string));
     return res.json({ message: "Grade deleted" });

@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
-import { requireRole } from "../../middlewares/requireRole.js";
+import { requirePermission } from "../../middlewares/requirePermission.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createChapterBody, listChaptersQuery, updateChapterBody } from "./schemas.js";
@@ -12,7 +12,7 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post("/chapters", requireRole("admin"), validate({ body: createChapterBody }), async (req, res, next) => {
+router.post("/chapters", requirePermission("chapter:write"), validate({ body: createChapterBody }), async (req, res, next) => {
   try {
     const { title, sortOrder, imageUrl, label, content, teacherGuide, subjectId } = req.body as z.infer<typeof createChapterBody>;
     const chapter = await chapterService.create({ title, sortOrder, imageUrl, label, content, teacherGuide, subjectId });
@@ -41,7 +41,7 @@ router.get("/chapters/:id", validate({ params: idParam }), async (req, res, next
   }
 });
 
-router.put("/chapters/:id", requireRole("admin"), validate({ params: idParam, body: updateChapterBody }), async (req, res, next) => {
+router.put("/chapters/:id", requirePermission("chapter:write"), validate({ params: idParam, body: updateChapterBody }), async (req, res, next) => {
   try {
     const { title, sortOrder, imageUrl, label, content, teacherGuide, subjectId } = req.body as z.infer<typeof updateChapterBody>;
     const updated = await chapterService.update(BigInt(req.params.id as string), { title, sortOrder, imageUrl, label, content, teacherGuide, subjectId });
@@ -51,7 +51,7 @@ router.put("/chapters/:id", requireRole("admin"), validate({ params: idParam, bo
   }
 });
 
-router.delete("/chapters/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
+router.delete("/chapters/:id", requirePermission("chapter:write"), validate({ params: idParam }), async (req, res, next) => {
   try {
     await chapterService.softDelete(BigInt(req.params.id as string));
     return res.json({ message: "Chapter deleted" });

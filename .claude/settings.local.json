@@ -18,7 +18,8 @@
       "Bash(wc:*)",
       "Bash(npm run:*)",
       "Bash(npm test:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
