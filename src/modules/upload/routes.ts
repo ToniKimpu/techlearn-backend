@@ -1,18 +1,11 @@
-import crypto from "crypto";
 import { NextFunction, Request, Response, Router } from "express";
 
-import { uploadToStorage } from "../../database/supabase.js";
+import { AppError } from "../../utils/errors.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { uploadSingle } from "../../middlewares/upload.js";
+import { uploadService } from "./service.js";
 
 const router = Router();
-
-const EXTENSION_MAP: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
 
 router.post(
   "/upload",
@@ -31,30 +24,15 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const bucket = req.body.bucket as string | undefined;
+      if (!bucket?.trim()) throw new AppError(400, "bucket is required");
+      if (!req.file) throw new AppError(400, "file is required");
 
-      if (!bucket?.trim()) {
-        return res.status(400).json({ message: "bucket is required" });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ message: "file is required" });
-      }
-
-      const ext = EXTENSION_MAP[req.file.mimetype] || "jpg";
-      const filename = `${crypto.randomUUID()}.${ext}`;
-
-      const url = await uploadToStorage(
-        bucket.trim(),
-        filename,
-        req.file.buffer,
-        req.file.mimetype
-      );
-
-      return res.status(201).json({ message: "File uploaded", data: { url } });
+      const data = await uploadService.uploadFile(req.file, bucket.trim());
+      return res.status(201).json({ message: "File uploaded", data });
     } catch (error) {
       return next(error);
     }
-  }
+  },
 );
 
 export default router;

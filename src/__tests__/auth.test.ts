@@ -16,6 +16,7 @@ vi.mock("../database/prisma.js", () => ({
       create: vi.fn(),
     },
     session: {
+      findUnique: vi.fn(),
       create: vi.fn(),
       deleteMany: vi.fn(),
     },

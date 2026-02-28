@@ -1,6 +1,7 @@
 import compression from "compression";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
+import { AppError } from "./utils/errors.js";
 import helmet from "helmet";
 
 import { globalLimiter } from "./middlewares/rateLimiter.js";
@@ -47,8 +48,11 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ message: err.message });
+  }
   console.error(err.stack || err);
-  res.status(500).json({ error: "Internal Server Error" });
+  return res.status(500).json({ error: "Internal Server Error" });
 });
 
 export default app;

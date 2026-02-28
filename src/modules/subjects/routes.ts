@@ -1,13 +1,12 @@
 import { Router } from "express";
 import type { z } from "zod";
 
-import { prisma } from "../../database/prisma.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requireRole } from "../../middlewares/requireRole.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
-import { getCache, invalidateCache, setCache } from "../../utils/cache.js";
 import { createSubjectBody, listSubjectsQuery, updateSubjectBody } from "./schemas.js";
+import { subjectService } from "./service.js";
 
 const router = Router();
 
@@ -16,169 +15,48 @@ router.use(requireAuth);
 router.post("/subjects", requireRole("admin"), validate({ body: createSubjectBody }), async (req, res, next) => {
   try {
     const { name, description, image, gradeId } = req.body as z.infer<typeof createSubjectBody>;
-
-    const grade = await prisma.grade.findFirst({
-      where: { id: BigInt(gradeId), isDeleted: false },
-    });
-
-    if (!grade) {
-      return res.status(404).json({ message: "Grade not found" });
-    }
-
-    const subject = await prisma.subject.create({
-      data: {
-        name,
-        description: description || null,
-        image: image || null,
-        gradeId: BigInt(gradeId),
-      },
-    });
-
-    await invalidateCache("subjects:*");
-
+    const subject = await subjectService.create({ name, description, image, gradeId });
     return res.status(201).json({ message: "Subject created", data: subject });
-  } catch (error) {
-    return next(error);
+  } catch (err) {
+    return next(err);
   }
 });
 
 router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, gradeId } = res.locals.query as z.infer<typeof listSubjectsQuery>;
-
-    const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${search || "all"}`;
-    const { data: cached } = await getCache(cacheKey);
-    if (cached) return res.set("X-Cache", "HIT").json(cached);
-
-    const where = {
-      isDeleted: false,
-      ...(gradeId ? { gradeId: BigInt(gradeId) } : {}),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" as const } },
-              { description: { contains: search, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
-    };
-
-    const [items, total] = await Promise.all([
-      prisma.subject.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.subject.count({ where }),
-    ]);
-
-    const response = {
-      data: items,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-
-    await setCache(cacheKey, response, 300);
-
-    return res.set("X-Cache", "MISS").json(response);
-  } catch (error) {
-    return next(error);
+    const result = await subjectService.list({ page, limit, search, gradeId });
+    return res.set("X-Cache", result.cached ? "HIT" : "MISS").json(result.data);
+  } catch (err) {
+    return next(err);
   }
 });
 
 router.get("/subjects/:id", validate({ params: idParam }), async (req, res, next) => {
   try {
-    const subjectId = BigInt(req.params.id as string);
-
-    const cacheKey = `subjects:detail:${subjectId}`;
-    const { data: cached } = await getCache(cacheKey);
-    if (cached) return res.set("X-Cache", "HIT").json(cached);
-
-    const subject = await prisma.subject.findFirst({
-      where: { id: subjectId, isDeleted: false },
-    });
-
-    if (!subject) {
-      return res.status(404).json({ message: "Subject not found" });
-    }
-
-    const response = { data: subject };
-    await setCache(cacheKey, response, 600);
-
-    return res.set("X-Cache", "MISS").json(response);
-  } catch (error) {
-    return next(error);
+    const result = await subjectService.getById(BigInt(req.params.id as string));
+    return res.set("X-Cache", result.cached ? "HIT" : "MISS").json(result.data);
+  } catch (err) {
+    return next(err);
   }
 });
 
 router.put("/subjects/:id", requireRole("admin"), validate({ params: idParam, body: updateSubjectBody }), async (req, res, next) => {
   try {
-    const subjectId = BigInt(req.params.id as string);
     const { name, description, image, gradeId } = req.body as z.infer<typeof updateSubjectBody>;
-
-    const existingSubject = await prisma.subject.findFirst({
-      where: { id: subjectId, isDeleted: false },
-    });
-
-    if (!existingSubject) {
-      return res.status(404).json({ message: "Subject not found" });
-    }
-
-    if (gradeId !== undefined) {
-      const grade = await prisma.grade.findFirst({
-        where: { id: BigInt(gradeId), isDeleted: false },
-      });
-
-      if (!grade) {
-        return res.status(404).json({ message: "Grade not found" });
-      }
-    }
-
-    const updatedSubject = await prisma.subject.update({
-      where: { id: subjectId },
-      data: {
-        ...(name !== undefined ? { name } : {}),
-        ...(description !== undefined ? { description: description || null } : {}),
-        ...(image !== undefined ? { image: image || null } : {}),
-        ...(gradeId !== undefined ? { gradeId: BigInt(gradeId) } : {}),
-      },
-    });
-
-    await invalidateCache("subjects:*");
-
-    return res.json({ message: "Subject updated", data: updatedSubject });
-  } catch (error) {
-    return next(error);
+    const updated = await subjectService.update(BigInt(req.params.id as string), { name, description, image, gradeId });
+    return res.json({ message: "Subject updated", data: updated });
+  } catch (err) {
+    return next(err);
   }
 });
 
 router.delete("/subjects/:id", requireRole("admin"), validate({ params: idParam }), async (req, res, next) => {
   try {
-    const subjectId = BigInt(req.params.id as string);
-
-    const existingSubject = await prisma.subject.findFirst({
-      where: { id: subjectId, isDeleted: false },
-    });
-
-    if (!existingSubject) {
-      return res.status(404).json({ message: "Subject not found" });
-    }
-
-    await prisma.subject.update({
-      where: { id: subjectId },
-      data: { isDeleted: true },
-    });
-
-    await invalidateCache("subjects:*");
-
+    await subjectService.softDelete(BigInt(req.params.id as string));
     return res.json({ message: "Subject deleted" });
-  } catch (error) {
-    return next(error);
+  } catch (err) {
+    return next(err);
   }
 });
 
