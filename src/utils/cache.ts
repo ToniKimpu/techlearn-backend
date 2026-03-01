@@ -1,4 +1,5 @@
 import { redis } from "../config/redis.js";
+import { cacheHitCounter, cacheMissCounter } from "./metrics.js";
 
 export interface CacheResult<T> {
   data: T | null;
@@ -10,7 +11,12 @@ export async function getCache<T>(key: string): Promise<CacheResult<T>> {
 
   try {
     const raw = await redis.get(key);
-    if (raw) return { data: JSON.parse(raw), hit: true };
+    const prefix = key.split(":")[0];
+    if (raw) {
+      cacheHitCounter.add(1, { key_prefix: prefix });
+      return { data: JSON.parse(raw), hit: true };
+    }
+    cacheMissCounter.add(1, { key_prefix: prefix });
     return { data: null, hit: false };
   } catch {
     return { data: null, hit: false };

@@ -19,6 +19,19 @@ services:
     volumes:
       - redisdata:/data
 
+  # Jaeger all-in-one: traces UI + OTLP collector in one container.
+  # UI:  http://localhost:16686
+  # OTLP HTTP: http://localhost:4318  (app sends traces here)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    restart: unless-stopped
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317"   # OTLP gRPC (optional)
+      - "4318:4318"   # OTLP HTTP
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
   app:
     build: .
     restart: unless-stopped
@@ -27,6 +40,7 @@ services:
     depends_on:
       - db
       - redis
+      - jaeger
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://techlearn:techlearn@db:5432/techlearn
@@ -36,6 +50,8 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       FRONTEND_URL: http://localhost:3000
+      OTEL_SERVICE_NAME: techlearn-backend
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
 
 volumes:
   pgdata:

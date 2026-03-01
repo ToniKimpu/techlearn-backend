@@ -1,3 +1,6 @@
+// instrumentation.ts MUST be the very first import so that OpenTelemetry
+// can monkey-patch http, express, pg, ioredis, and pino before they load.
+import { sdk as otelSdk } from "./instrumentation.js";
 import "./config/env.js";
 import "./config/queue.js";
 import http from "http";
@@ -53,6 +56,10 @@ async function shutdown(signal: string) {
   httpServer.close(async () => {
     await prisma.$disconnect();
     redis?.disconnect();
+    // Flush in-flight spans and metrics before exiting
+    await otelSdk?.shutdown().catch((err) =>
+      logger.error({ err }, "OTel SDK shutdown error")
+    );
     logger.info("Server shut down cleanly");
     process.exit(0);
   });

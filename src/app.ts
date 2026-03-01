@@ -3,13 +3,15 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { AppError } from "./utils/errors.js";
 import helmet from "helmet";
-import type { IncomingMessage } from "http";
+import type { IncomingMessage, ServerResponse } from "http";
 import pinoHttp from "pino-http";
 
 import { redis } from "./config/redis.js";
 import { prisma } from "./database/prisma.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
+import { traceHeaderMiddleware } from "./middlewares/tracing.js";
 import { logger } from "./utils/logger.js";
+import { prometheusExporter } from "./instrumentation.js";
 import passport from "./config/passport.js";
 import authRoutes from "./modules/auth/routes.js";
 import chapterRoutes from "./modules/chapters/routes.js";
@@ -40,8 +42,13 @@ app.use(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.use((pinoHttp as any)({
   logger,
-  autoLogging: { ignore: (req: IncomingMessage) => req.url === "/health" },
+  autoLogging: {
+    ignore: (req: IncomingMessage) =>
+      req.url === "/health" || req.url === "/metrics",
+  },
 }));
+// Inject X-Trace-Id response header (client-side trace correlation)
+app.use(traceHeaderMiddleware);
 app.use(passport.initialize());
 app.use(globalLimiter);
 
@@ -55,6 +62,16 @@ app.use("/api/v1", emailRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("API running");
+});
+
+// Prometheus metrics — scrape this with Prometheus or Grafana Agent.
+// In production, protect this endpoint with a reverse-proxy allow-list or
+// a scrape token (e.g. Bearer check) so it is not publicly accessible.
+app.get("/metrics", (_req: Request, res: Response) => {
+  prometheusExporter.getMetricsRequestHandler(
+    _req as unknown as IncomingMessage,
+    res as unknown as ServerResponse
+  );
 });
 
 app.get("/health", async (_req: Request, res: Response) => {

@@ -6,7 +6,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
+    "start": "node --import ./dist/instrumentation.js dist/server.js",
     "deploy": "curl -i -X POST \"https://api.render.com/deploy/srv-d6g96m9aae7s73dm61sg?key=i-_-QjLk7i4\"",
     "build": "prisma generate && tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json"
@@ -35,6 +35,12 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.70.1",
+    "@opentelemetry/exporter-prometheus": "^0.212.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.212.0",
+    "@opentelemetry/sdk-node": "^0.212.0",
+    "@opentelemetry/semantic-conventions": "^1.40.0",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "argon2": "^0.44.0",
