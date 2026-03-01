@@ -3,8 +3,13 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { AppError } from "./utils/errors.js";
 import helmet from "helmet";
+import type { IncomingMessage } from "http";
+import pinoHttp from "pino-http";
 
+import { redis } from "./config/redis.js";
+import { prisma } from "./database/prisma.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
+import { logger } from "./utils/logger.js";
 import passport from "./config/passport.js";
 import authRoutes from "./modules/auth/routes.js";
 import chapterRoutes from "./modules/chapters/routes.js";
@@ -32,6 +37,11 @@ app.use(
   })
 );
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use((pinoHttp as any)({
+  logger,
+  autoLogging: { ignore: (req: IncomingMessage) => req.url === "/health" },
+}));
 app.use(passport.initialize());
 app.use(globalLimiter);
 
@@ -47,11 +57,38 @@ app.get("/", (_req: Request, res: Response) => {
   res.send("API running");
 });
 
+app.get("/health", async (_req: Request, res: Response) => {
+  const checks: Record<string, string> = { db: "ok", redis: "ok" };
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    checks.db = "error";
+  }
+
+  if (!redis) {
+    checks.redis = "unavailable";
+  } else {
+    try {
+      await redis.ping();
+    } catch {
+      checks.redis = "error";
+    }
+  }
+
+  const status = Object.values(checks).some((v) => v === "error") ? "degraded" : "ok";
+  return res.status(status === "ok" ? 200 : 503).json({
+    status,
+    ...checks,
+    uptime: Math.floor(process.uptime()),
+  });
+});
+
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ message: err.message });
   }
-  console.error(err.stack || err);
+  logger.error({ err }, "Unhandled error");
   return res.status(500).json({ error: "Internal Server Error" });
 });
 

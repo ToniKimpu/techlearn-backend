@@ -3,6 +3,9 @@ import "./config/queue.js";
 import http from "http";
 import { Server } from "socket.io";
 import app, { CORS_ORIGIN } from "./app.js";
+import { redis } from "./config/redis.js";
+import { prisma } from "./database/prisma.js";
+import { logger } from "./utils/logger.js";
 import { verifyAccessToken } from "./utils/jwt.js";
 
 const PORT = process.env.PORT || 4000;
@@ -33,13 +36,33 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.data.user?.authId);
+  logger.info({ authId: socket.data.user?.authId }, "Socket connected");
 
   socket.on("disconnect", () => {
-    console.log("Socket disconnected");
+    logger.info({ authId: socket.data.user?.authId }, "Socket disconnected");
   });
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  logger.info({ port: PORT }, "Server started");
 });
+
+async function shutdown(signal: string) {
+  logger.info({ signal }, "Shutdown signal received");
+
+  httpServer.close(async () => {
+    await prisma.$disconnect();
+    redis?.disconnect();
+    logger.info("Server shut down cleanly");
+    process.exit(0);
+  });
+
+  // Force exit if shutdown takes longer than 10s
+  setTimeout(() => {
+    logger.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
