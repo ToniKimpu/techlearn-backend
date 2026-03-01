@@ -128,14 +128,14 @@ npx prisma format
 # Validate schema
 npx prisma validate
 
+# Regenerate Prisma client after schema changes
+npx prisma generate
+
 # Create and apply a migration (needs DIRECT_URL)
 npx prisma migrate dev --name <migration-name>
 
 # Push schema changes without creating a migration file
 npx prisma db push
-
-# Regenerate Prisma client after schema changes
-npx prisma generate
 
 # Open Prisma Studio (visual DB browser)
 npx prisma studio
