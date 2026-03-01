@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requirePermission } from "../../middlewares/requirePermission.js";
+import { userLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createCurriculumBody, listCurriculumsQuery, updateCurriculumBody } from "./schemas.js";
@@ -22,7 +23,7 @@ router.post("/curriculums", requirePermission("curriculum:write"), validate({ bo
   }
 });
 
-router.get("/curriculums", validate({ query: listCurriculumsQuery }), async (req, res, next) => {
+router.get("/curriculums", userLimiter(60, 60_000), validate({ query: listCurriculumsQuery }), async (req, res, next) => {
   try {
     const { page, limit, search } = res.locals.query as z.infer<typeof listCurriculumsQuery>;
     const result = await curriculumService.list({ page, limit, search });

@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requirePermission } from "../../middlewares/requirePermission.js";
+import { userLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createGradeBody, listGradesQuery, updateGradeBody } from "./schemas.js";
@@ -22,7 +23,7 @@ router.post("/grades", requirePermission("grade:write"), validate({ body: create
   }
 });
 
-router.get("/grades", validate({ query: listGradesQuery }), async (req, res, next) => {
+router.get("/grades", userLimiter(60, 60_000), validate({ query: listGradesQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, curriculumId } = res.locals.query as z.infer<typeof listGradesQuery>;
     const result = await gradeService.list({ page, limit, search, curriculumId });

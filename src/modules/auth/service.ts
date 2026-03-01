@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 
 import { ROLES } from "../../config/roles.js";
 import { prisma } from "../../database/prisma.js";
@@ -87,7 +87,7 @@ async function register(
   const existing = await prisma.authUser.findUnique({ where: { email } });
   if (existing) throw new AppError(400, "Email already exists");
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await argon2.hash(password);
   const profileId = crypto.randomUUID();
 
   const auth = await prisma.authUser.create({

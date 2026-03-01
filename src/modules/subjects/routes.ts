@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requirePermission } from "../../middlewares/requirePermission.js";
+import { userLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createSubjectBody, listSubjectsQuery, updateSubjectBody } from "./schemas.js";
@@ -22,7 +23,7 @@ router.post("/subjects", requirePermission("subject:write"), validate({ body: cr
   }
 });
 
-router.get("/subjects", validate({ query: listSubjectsQuery }), async (req, res, next) => {
+router.get("/subjects", userLimiter(60, 60_000), validate({ query: listSubjectsQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, gradeId } = res.locals.query as z.infer<typeof listSubjectsQuery>;
     const result = await subjectService.list({ page, limit, search, gradeId });

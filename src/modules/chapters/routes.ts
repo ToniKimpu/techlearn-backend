@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { requirePermission } from "../../middlewares/requirePermission.js";
+import { userLimiter } from "../../middlewares/rateLimiter.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParam } from "../../schemas/shared.js";
 import { createChapterBody, listChaptersQuery, updateChapterBody } from "./schemas.js";
@@ -22,7 +23,7 @@ router.post("/chapters", requirePermission("chapter:write"), validate({ body: cr
   }
 });
 
-router.get("/chapters", validate({ query: listChaptersQuery }), async (req, res, next) => {
+router.get("/chapters", userLimiter(60, 60_000), validate({ query: listChaptersQuery }), async (req, res, next) => {
   try {
     const { page, limit, search, subjectId } = res.locals.query as z.infer<typeof listChaptersQuery>;
     const result = await chapterService.list({ page, limit, search, subjectId });

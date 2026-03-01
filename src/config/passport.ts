@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { prisma } from "../database/prisma.js";
@@ -15,7 +15,7 @@ passport.use(
         return done(null, false, { message: "Incorrect email" });
       }
 
-      const match = await bcrypt.compare(password, auth.passwordHash!);
+      const match = await argon2.verify(auth.passwordHash!, password);
       if (!match) {
         return done(null, false, { message: "Incorrect password" });
       }
