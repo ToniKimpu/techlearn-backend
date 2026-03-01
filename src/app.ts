@@ -5,6 +5,7 @@ import { AppError } from "./utils/errors.js";
 import helmet from "helmet";
 import type { IncomingMessage, ServerResponse } from "http";
 import pinoHttp from "pino-http";
+import swaggerUi from "swagger-ui-express";
 
 import { redis } from "./config/redis.js";
 import { prisma } from "./database/prisma.js";
@@ -12,6 +13,7 @@ import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { traceHeaderMiddleware } from "./middlewares/tracing.js";
 import { logger } from "./utils/logger.js";
 import { prometheusExporter } from "./instrumentation.js";
+import { openApiDocument } from "./openapi/index.js";
 import passport from "./config/passport.js";
 import authRoutes from "./modules/auth/routes.js";
 import chapterRoutes from "./modules/chapters/routes.js";
@@ -51,6 +53,11 @@ app.use(
 app.use(traceHeaderMiddleware);
 app.use(passport.initialize());
 app.use(globalLimiter);
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+app.get("/docs/json", (_req: Request, res: Response) => {
+  res.json(openApiDocument);
+});
 
 app.use("/api/v1", authRoutes);
 app.use("/api/v1", curriculumRoutes);
