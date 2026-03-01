@@ -43,9 +43,7 @@ const mockPrisma = vi.mocked(prisma);
 describe("Auth API", () => {
   describe("POST /api/v1/auth/register", () => {
     it("returns 400 for missing fields", async () => {
-      const res = await request(app)
-        .post("/api/v1/auth/register")
-        .send({});
+      const res = await request(app).post("/api/v1/auth/register").send({});
 
       expect(res.status).toBe(400);
     });
@@ -119,9 +117,7 @@ describe("Auth API", () => {
 
   describe("POST /api/v1/auth/logout", () => {
     it("returns 400 for missing refresh token", async () => {
-      const res = await request(app)
-        .post("/api/v1/auth/logout")
-        .send({});
+      const res = await request(app).post("/api/v1/auth/logout").send({});
 
       expect(res.status).toBe(400);
     });

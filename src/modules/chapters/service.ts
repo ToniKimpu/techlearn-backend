@@ -23,7 +23,9 @@ type UpdateInput = {
 type ListInput = { page: number; limit: number; search?: string; subjectId?: string };
 
 async function create(data: CreateInput) {
-  const subject = await prisma.subject.findFirst({ where: { id: BigInt(data.subjectId), isDeleted: false } });
+  const subject = await prisma.subject.findFirst({
+    where: { id: BigInt(data.subjectId), isDeleted: false },
+  });
   if (!subject) throw new AppError(404, "Subject not found");
 
   const chapter = await prisma.chapter.create({
@@ -51,16 +53,29 @@ async function list({ page, limit, search, subjectId }: ListInput) {
     isDeleted: false,
     ...(subjectId ? { subjectId: BigInt(subjectId) } : {}),
     ...(search
-      ? { OR: [{ title: { contains: search, mode: "insensitive" as const } }, { label: { contains: search, mode: "insensitive" as const } }] }
+      ? {
+          OR: [
+            { title: { contains: search, mode: "insensitive" as const } },
+            { label: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
       : {}),
   };
 
   const [items, total] = await Promise.all([
-    prisma.chapter.findMany({ where, orderBy: { sortOrder: "asc" }, skip: (page - 1) * limit, take: limit }),
+    prisma.chapter.findMany({
+      where,
+      orderBy: { sortOrder: "asc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
     prisma.chapter.count({ where }),
   ]);
 
-  const response = { data: items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const response = {
+    data: items,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
   await setCache(cacheKey, response, 300);
   return { cached: false, data: response };
 }
@@ -83,7 +98,9 @@ async function update(id: bigint, data: UpdateInput) {
   if (!existing) throw new AppError(404, "Chapter not found");
 
   if (data.subjectId !== undefined) {
-    const subject = await prisma.subject.findFirst({ where: { id: BigInt(data.subjectId), isDeleted: false } });
+    const subject = await prisma.subject.findFirst({
+      where: { id: BigInt(data.subjectId), isDeleted: false },
+    });
     if (!subject) throw new AppError(404, "Subject not found");
   }
 

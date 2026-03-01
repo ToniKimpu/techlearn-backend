@@ -9,3 +9,6 @@ legacy
 credential.md
 all_tables.txt
 tables_structure.txt
+
+# Lint cache
+.eslintcache

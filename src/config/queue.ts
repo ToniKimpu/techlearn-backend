@@ -2,11 +2,12 @@ import { Worker, type Job } from "bullmq";
 import { redis, redisConnectionOptions } from "./redis.js";
 import { transporter, SMTP_FROM } from "./email.js";
 import { welcomeEmail } from "../modules/email/templates.js";
+import { logger } from "../utils/logger.js";
 import type { EmailJobData } from "../modules/email/producer.js";
 
 export async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
   if (!transporter) {
-    console.warn("[Worker] SMTP not configured, skipping email job:", job.name);
+    logger.warn("[Worker] SMTP not configured, skipping email job: %s", job.name);
     return;
   }
 
@@ -27,7 +28,7 @@ export async function processEmailJob(job: Job<EmailJobData>): Promise<void> {
       throw new Error(`Unknown email type: ${(data as any).type}`);
   }
 
-  console.log(`[Worker] Email sent: ${data.type} to ${data.to}`);
+  logger.info("[Worker] Email sent: %s to %s", data.type, data.to);
 }
 
 let emailWorker: Worker | null = null;
@@ -39,14 +40,14 @@ if (redis) {
   });
 
   emailWorker.on("completed", (job) => {
-    console.log(`[Worker] Job ${job.id} completed`);
+    logger.info("[Worker] Job %s completed", job.id);
   });
 
   emailWorker.on("failed", (job, error) => {
-    console.error(`[Worker] Job ${job?.id} failed:`, error.message);
+    logger.error("[Worker] Job %s failed: %s", job?.id, error.message);
   });
 
-  console.log("[Worker] Email worker started");
+  logger.info("[Worker] Email worker started");
 }
 
 export { emailWorker };

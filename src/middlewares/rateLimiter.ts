@@ -8,8 +8,7 @@ function createRedisStore(prefix: string) {
   if (!redis) return undefined;
 
   return new RedisStore({
-    sendCommand: (...args: string[]) =>
-      redis.call(args[0], ...args.slice(1)) as any,
+    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
     prefix,
   });
 }

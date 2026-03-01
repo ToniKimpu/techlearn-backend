@@ -39,14 +39,14 @@ app.use(
   })
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-app.use((pinoHttp as any)({
-  logger,
-  autoLogging: {
-    ignore: (req: IncomingMessage) =>
-      req.url === "/health" || req.url === "/metrics",
-  },
-}));
+app.use(
+  (pinoHttp as any)({
+    logger,
+    autoLogging: {
+      ignore: (req: IncomingMessage) => req.url === "/health" || req.url === "/metrics",
+    },
+  })
+);
 // Inject X-Trace-Id response header (client-side trace correlation)
 app.use(traceHeaderMiddleware);
 app.use(passport.initialize());

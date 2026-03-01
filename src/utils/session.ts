@@ -34,7 +34,11 @@ function sessionKey(authId: string, refreshToken: string) {
   return `session:${authId}:${refreshToken}`;
 }
 
-export async function cacheSession(authId: string, refreshToken: string, data: CachedSession): Promise<void> {
+export async function cacheSession(
+  authId: string,
+  refreshToken: string,
+  data: CachedSession
+): Promise<void> {
   if (!redis) return;
   try {
     await redis.set(sessionKey(authId, refreshToken), JSON.stringify(data), "EX", SESSION_TTL);
@@ -49,7 +53,13 @@ export async function getCachedSession(refreshToken: string): Promise<CachedSess
     // We don't know the authId, so scan for the token
     let cursor = "0";
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", `session:*:${refreshToken}`, "COUNT", 100);
+      const [nextCursor, keys] = await redis.scan(
+        cursor,
+        "MATCH",
+        `session:*:${refreshToken}`,
+        "COUNT",
+        100
+      );
       cursor = nextCursor;
       if (keys.length > 0) {
         const raw = await redis.get(keys[0]);
@@ -76,7 +86,13 @@ export async function removeAllCachedSessions(authId: string): Promise<void> {
   try {
     let cursor = "0";
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", `session:${authId}:*`, "COUNT", 100);
+      const [nextCursor, keys] = await redis.scan(
+        cursor,
+        "MATCH",
+        `session:${authId}:*`,
+        "COUNT",
+        100
+      );
       cursor = nextCursor;
       if (keys.length > 0) {
         await redis.del(...keys);

@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import { redis, redisConnectionOptions } from "../../config/redis.js";
+import { logger } from "../../utils/logger.js";
 
 export interface WelcomeEmailJob {
   type: "welcome";
@@ -24,21 +25,21 @@ if (redis) {
       removeOnFail: { count: 500 },
     },
   });
-  console.log("[Queue] Email queue created");
+  logger.info("[Queue] Email queue created");
 }
 
 export { emailQueue };
 
 export async function queueWelcomeEmail(to: string, name: string): Promise<void> {
   if (!emailQueue) {
-    console.warn("[Queue] Email queue not available, skipping welcome email");
+    logger.warn("[Queue] Email queue not available, skipping welcome email");
     return;
   }
 
   try {
     await emailQueue.add("welcome-email", { type: "welcome", to, name });
-    console.log(`[Queue] Welcome email queued for ${to}`);
+    logger.info("[Queue] Welcome email queued for %s", to);
   } catch (error) {
-    console.error("[Queue] Failed to queue welcome email:", error);
+    logger.error({ err: error }, "[Queue] Failed to queue welcome email");
   }
 }

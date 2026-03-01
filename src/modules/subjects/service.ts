@@ -7,7 +7,9 @@ type UpdateInput = { name?: string; description?: string; image?: string; gradeI
 type ListInput = { page: number; limit: number; search?: string; gradeId?: string };
 
 async function create(data: CreateInput) {
-  const grade = await prisma.grade.findFirst({ where: { id: BigInt(data.gradeId), isDeleted: false } });
+  const grade = await prisma.grade.findFirst({
+    where: { id: BigInt(data.gradeId), isDeleted: false },
+  });
   if (!grade) throw new AppError(404, "Grade not found");
 
   const subject = await prisma.subject.create({
@@ -32,16 +34,29 @@ async function list({ page, limit, search, gradeId }: ListInput) {
     isDeleted: false,
     ...(gradeId ? { gradeId: BigInt(gradeId) } : {}),
     ...(search
-      ? { OR: [{ name: { contains: search, mode: "insensitive" as const } }, { description: { contains: search, mode: "insensitive" as const } }] }
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { description: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
       : {}),
   };
 
   const [items, total] = await Promise.all([
-    prisma.subject.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
+    prisma.subject.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
     prisma.subject.count({ where }),
   ]);
 
-  const response = { data: items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const response = {
+    data: items,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
   await setCache(cacheKey, response, 300);
   return { cached: false, data: response };
 }
@@ -64,7 +79,9 @@ async function update(id: bigint, data: UpdateInput) {
   if (!existing) throw new AppError(404, "Subject not found");
 
   if (data.gradeId !== undefined) {
-    const grade = await prisma.grade.findFirst({ where: { id: BigInt(data.gradeId), isDeleted: false } });
+    const grade = await prisma.grade.findFirst({
+      where: { id: BigInt(data.gradeId), isDeleted: false },
+    });
     if (!grade) throw new AppError(404, "Grade not found");
   }
 

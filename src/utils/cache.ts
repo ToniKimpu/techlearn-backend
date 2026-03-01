@@ -33,7 +33,6 @@ export async function setCache(key: string, data: unknown, ttlSeconds: number): 
   }
 }
 
-
 export async function invalidateCache(pattern: string): Promise<void> {
   if (!redis) return;
 

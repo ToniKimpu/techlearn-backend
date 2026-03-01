@@ -14,17 +14,13 @@ import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentation
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import {
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION,
-} from "@opentelemetry/semantic-conventions";
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 
 const enabled = process.env.OTEL_SDK_DISABLED !== "true";
 
 // Service resource attributes — appear in every trace and metric
 const resource = resourceFromAttributes({
-  [ATTR_SERVICE_NAME]:
-    process.env.OTEL_SERVICE_NAME ?? "techlearn-backend",
+  [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? "techlearn-backend",
   [ATTR_SERVICE_VERSION]: process.env.npm_package_version ?? "1.0.0",
   "deployment.environment": process.env.NODE_ENV ?? "development",
 });
@@ -39,9 +35,7 @@ let sdk: NodeSDK | null = null;
 if (enabled) {
   const traceExporter = new OTLPTraceExporter({
     // Default: Jaeger all-in-one OTLP HTTP endpoint (override via env)
-    url:
-      process.env.OTEL_EXPORTER_OTLP_ENDPOINT ??
-      "http://localhost:4318/v1/traces",
+    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://localhost:4318/v1/traces",
   });
 
   sdk = new NodeSDK({
@@ -58,8 +52,7 @@ if (enabled) {
         // HTTP: skip health/metrics endpoints to keep traces clean
         "@opentelemetry/instrumentation-http": {
           enabled: true,
-          ignoreIncomingRequestHook: (req) =>
-            req.url === "/health" || req.url === "/metrics",
+          ignoreIncomingRequestHook: (req) => req.url === "/health" || req.url === "/metrics",
         },
 
         // pg auto-instrumentation traces every Prisma query

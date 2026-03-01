@@ -35,16 +35,29 @@ async function list({ page, limit, search }: ListInput) {
   const where: Prisma.CurriculumWhereInput = {
     isDeleted: false,
     ...(search
-      ? { OR: [{ name: { contains: search, mode: "insensitive" } }, { description: { contains: search, mode: "insensitive" } }] }
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        }
       : {}),
   };
 
   const [items, total] = await Promise.all([
-    prisma.curriculum.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
+    prisma.curriculum.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
     prisma.curriculum.count({ where }),
   ]);
 
-  const response = { data: items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const response = {
+    data: items,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
   await setCache(cacheKey, response, 300);
   return { cached: false, data: response };
 }

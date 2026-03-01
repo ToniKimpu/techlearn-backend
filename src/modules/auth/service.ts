@@ -24,9 +24,13 @@ type AuthResult = {
 };
 
 async function createSession(
-  auth: { id: string; profile: { id: string; fullName: string; userType: string } | null; email: string },
+  auth: {
+    id: string;
+    profile: { id: string; fullName: string; userType: string } | null;
+    email: string;
+  },
   ip: string | undefined,
-  userAgent: string | undefined,
+  userAgent: string | undefined
 ): Promise<AuthResult> {
   if (!auth.profile) throw new AppError(403, "User profile missing");
 
@@ -82,7 +86,7 @@ async function register(
   password: string,
   name: string,
   ip: string | undefined,
-  userAgent: string | undefined,
+  userAgent: string | undefined
 ): Promise<AuthResult> {
   const existing = await prisma.authUser.findUnique({ where: { email } });
   if (existing) throw new AppError(400, "Email already exists");
@@ -116,9 +120,13 @@ async function register(
 }
 
 async function login(
-  auth: { id: string; profile: { id: string; fullName: string; userType: string } | null; email: string },
+  auth: {
+    id: string;
+    profile: { id: string; fullName: string; userType: string } | null;
+    email: string;
+  },
   ip: string | undefined,
-  userAgent: string | undefined,
+  userAgent: string | undefined
 ): Promise<AuthResult> {
   return createSession(auth, ip, userAgent);
 }

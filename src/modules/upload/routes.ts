@@ -32,7 +32,7 @@ router.post(
     } catch (error) {
       return next(error);
     }
-  },
+  }
 );
 
 export default router;

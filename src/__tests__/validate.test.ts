@@ -47,7 +47,9 @@ describe("validate middleware", () => {
       body: { name: "Test", email: "test@example.com" },
     });
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     validate({ body: bodySchema })(req, res, next);
 
@@ -60,7 +62,9 @@ describe("validate middleware", () => {
       body: { name: "", email: "not-an-email" },
     });
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     validate({ body: bodySchema })(req, res, next);
 
@@ -74,7 +78,9 @@ describe("validate middleware", () => {
       params: { id: "123" },
     });
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     validate({ params: paramsSchema })(req, res, next);
 
@@ -87,7 +93,9 @@ describe("validate middleware", () => {
       query: { page: "2", limit: "20" },
     });
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     validate({ query: querySchema })(req, res, next);
 
@@ -98,7 +106,9 @@ describe("validate middleware", () => {
   it("applies query defaults when no query params provided", () => {
     const { req, res, locals } = createMockReqRes({ query: {} });
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     validate({ query: querySchema })(req, res, next);
 
@@ -109,7 +119,9 @@ describe("validate middleware", () => {
   it("calls next() when no schemas provided", () => {
     const { req, res } = createMockReqRes();
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     validate({})(req, res, next);
 

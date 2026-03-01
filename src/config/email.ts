@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "../utils/logger.js";
 
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587");
@@ -18,9 +19,9 @@ if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
       pass: SMTP_PASS,
     },
   });
-  console.log("[Email] SMTP transporter configured");
+  logger.info("[Email] SMTP transporter configured");
 } else {
-  console.warn("[Email] SMTP not configured, email sending disabled");
+  logger.warn("[Email] SMTP not configured, email sending disabled");
 }
 
 export { transporter, SMTP_FROM };

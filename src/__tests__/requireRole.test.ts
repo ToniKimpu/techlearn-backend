@@ -30,7 +30,9 @@ describe("requireRole middleware", () => {
   it("calls next() when user role matches", () => {
     const { req, res } = createMockReqRes("admin");
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireRole("admin")(req, res, next);
 
@@ -40,7 +42,9 @@ describe("requireRole middleware", () => {
   it("calls next() when user role is one of multiple allowed roles", () => {
     const { req, res } = createMockReqRes("teacher");
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireRole("admin", "teacher")(req, res, next);
 
@@ -50,7 +54,9 @@ describe("requireRole middleware", () => {
   it("returns 403 when user role is not allowed", () => {
     const { req, res, resBody } = createMockReqRes("student");
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireRole("admin")(req, res, next);
 
@@ -62,7 +68,9 @@ describe("requireRole middleware", () => {
   it("returns 403 when authUser is undefined", () => {
     const { req, res, resBody } = createMockReqRes(undefined);
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireRole("admin")(req, res, next);
 

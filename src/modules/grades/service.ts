@@ -7,7 +7,9 @@ type UpdateInput = { name?: string; description?: string; image?: string; curric
 type ListInput = { page: number; limit: number; search?: string; curriculumId?: string };
 
 async function create(data: CreateInput) {
-  const curriculum = await prisma.curriculum.findFirst({ where: { id: BigInt(data.curriculumId), isDeleted: false } });
+  const curriculum = await prisma.curriculum.findFirst({
+    where: { id: BigInt(data.curriculumId), isDeleted: false },
+  });
   if (!curriculum) throw new AppError(404, "Curriculum not found");
 
   const grade = await prisma.grade.create({
@@ -32,16 +34,29 @@ async function list({ page, limit, search, curriculumId }: ListInput) {
     isDeleted: false,
     ...(curriculumId ? { curriculumId: BigInt(curriculumId) } : {}),
     ...(search
-      ? { OR: [{ name: { contains: search, mode: "insensitive" as const } }, { description: { contains: search, mode: "insensitive" as const } }] }
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { description: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
       : {}),
   };
 
   const [items, total] = await Promise.all([
-    prisma.grade.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
+    prisma.grade.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
     prisma.grade.count({ where }),
   ]);
 
-  const response = { data: items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  const response = {
+    data: items,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
   await setCache(cacheKey, response, 300);
   return { cached: false, data: response };
 }
@@ -64,7 +79,9 @@ async function update(id: bigint, data: UpdateInput) {
   if (!existing) throw new AppError(404, "Grade not found");
 
   if (data.curriculumId !== undefined) {
-    const curriculum = await prisma.curriculum.findFirst({ where: { id: BigInt(data.curriculumId), isDeleted: false } });
+    const curriculum = await prisma.curriculum.findFirst({
+      where: { id: BigInt(data.curriculumId), isDeleted: false },
+    });
     if (!curriculum) throw new AppError(404, "Curriculum not found");
   }
 

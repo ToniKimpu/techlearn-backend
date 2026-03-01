@@ -14,15 +14,13 @@ const meter = metrics.getMeter("techlearn-backend");
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
 
-export const cacheHitCounter = meter.createCounter(
-  "techlearn_cache_hits_total",
-  { description: "Number of Redis cache hits" }
-);
+export const cacheHitCounter = meter.createCounter("techlearn_cache_hits_total", {
+  description: "Number of Redis cache hits",
+});
 
-export const cacheMissCounter = meter.createCounter(
-  "techlearn_cache_misses_total",
-  { description: "Number of Redis cache misses" }
-);
+export const cacheMissCounter = meter.createCounter("techlearn_cache_misses_total", {
+  description: "Number of Redis cache misses",
+});
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -30,14 +28,12 @@ export const cacheMissCounter = meter.createCounter(
  * Increment when login, token refresh, or registration fails.
  * Attributes: { reason: "invalid_credentials" | "account_inactive" | ... }
  */
-export const authFailureCounter = meter.createCounter(
-  "techlearn_auth_failures_total",
-  { description: "Number of authentication failures" }
-);
+export const authFailureCounter = meter.createCounter("techlearn_auth_failures_total", {
+  description: "Number of authentication failures",
+});
 
 // ── Email queue ───────────────────────────────────────────────────────────────
 
-export const emailJobCounter = meter.createCounter(
-  "techlearn_email_jobs_total",
-  { description: "Number of email jobs enqueued" }
-);
+export const emailJobCounter = meter.createCounter("techlearn_email_jobs_total", {
+  description: "Number of email jobs enqueued",
+});

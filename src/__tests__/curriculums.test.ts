@@ -56,7 +56,15 @@ describe("Curriculums API", () => {
 
     it("returns list for authenticated student", async () => {
       const mockItems = [
-        { id: 1n, name: "Curriculum 1", description: null, image: "", isDeleted: false, createdAt: new Date(), updatedAt: new Date() },
+        {
+          id: 1n,
+          name: "Curriculum 1",
+          description: null,
+          image: "",
+          isDeleted: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ];
       mockPrisma.curriculum.findMany.mockResolvedValue(mockItems);
       mockPrisma.curriculum.count.mockResolvedValue(1);
@@ -104,7 +112,13 @@ describe("Curriculums API", () => {
 
     it("returns 201 for admin", async () => {
       const mockCurriculum = {
-        id: 1n, name: "Test Curriculum", description: null, image: "", isDeleted: false, createdAt: new Date(), updatedAt: new Date(),
+        id: 1n,
+        name: "Test Curriculum",
+        description: null,
+        image: "",
+        isDeleted: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       mockPrisma.curriculum.create.mockResolvedValue(mockCurriculum);
 
@@ -139,7 +153,13 @@ describe("Curriculums API", () => {
 
     it("returns 200 for admin with valid update", async () => {
       const mockCurriculum = {
-        id: 1n, name: "Old Name", description: null, image: "", isDeleted: false, createdAt: new Date(), updatedAt: new Date(),
+        id: 1n,
+        name: "Old Name",
+        description: null,
+        image: "",
+        isDeleted: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       mockPrisma.curriculum.findFirst.mockResolvedValue(mockCurriculum);
       mockPrisma.curriculum.update.mockResolvedValue({ ...mockCurriculum, name: "Updated" });
@@ -165,7 +185,13 @@ describe("Curriculums API", () => {
 
     it("returns 200 for admin", async () => {
       const mockCurriculum = {
-        id: 1n, name: "To Delete", description: null, image: "", isDeleted: false, createdAt: new Date(), updatedAt: new Date(),
+        id: 1n,
+        name: "To Delete",
+        description: null,
+        image: "",
+        isDeleted: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       mockPrisma.curriculum.findFirst.mockResolvedValue(mockCurriculum);
       mockPrisma.curriculum.update.mockResolvedValue({ ...mockCurriculum, isDeleted: true });

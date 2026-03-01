@@ -37,7 +37,9 @@ describe("requireAuth middleware", () => {
 
     const { req, res } = createMockReqRes(`Bearer ${token}`);
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireAuth(req, res, next);
 
@@ -52,7 +54,9 @@ describe("requireAuth middleware", () => {
   it("returns 401 when no Authorization header", () => {
     const { req, res, resBody } = createMockReqRes(undefined);
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireAuth(req, res, next);
 
@@ -64,7 +68,9 @@ describe("requireAuth middleware", () => {
   it("returns 401 with an invalid token", () => {
     const { req, res, resBody } = createMockReqRes("Bearer bad.token.here");
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireAuth(req, res, next);
 
@@ -75,7 +81,9 @@ describe("requireAuth middleware", () => {
   it("returns 401 when header is not Bearer scheme", () => {
     const { req, res, resBody } = createMockReqRes("Basic abc123");
     let called = false;
-    const next: NextFunction = (() => { called = true; }) as any;
+    const next: NextFunction = (() => {
+      called = true;
+    }) as any;
 
     requireAuth(req, res, next);
 

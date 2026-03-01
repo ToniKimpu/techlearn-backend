@@ -57,9 +57,7 @@ async function shutdown(signal: string) {
     await prisma.$disconnect();
     redis?.disconnect();
     // Flush in-flight spans and metrics before exiting
-    await otelSdk?.shutdown().catch((err) =>
-      logger.error({ err }, "OTel SDK shutdown error")
-    );
+    await otelSdk?.shutdown().catch((err) => logger.error({ err }, "OTel SDK shutdown error"));
     logger.info("Server shut down cleanly");
     process.exit(0);
   });

@@ -19,7 +19,8 @@
       "Bash(npm run:*)",
       "Bash(npm test:*)",
       "Bash(node:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(npx husky:*)"
     ]
   }
 }

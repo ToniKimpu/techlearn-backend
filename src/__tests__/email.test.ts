@@ -60,9 +60,7 @@ describe("Email Producer", () => {
   it("queueWelcomeEmail does not throw when queue is null", async () => {
     const { queueWelcomeEmail } = await import("../modules/email/producer.js");
 
-    await expect(
-      queueWelcomeEmail("test@example.com", "Test User")
-    ).resolves.not.toThrow();
+    await expect(queueWelcomeEmail("test@example.com", "Test User")).resolves.not.toThrow();
   });
 });
 
