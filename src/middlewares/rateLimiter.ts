@@ -6,9 +6,10 @@ import { redis } from "../config/redis.js";
 
 function createRedisStore(prefix: string) {
   if (!redis) return undefined;
+  const client = redis;
 
   return new RedisStore({
-    sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+    sendCommand: (...args: string[]) => client.call(args[0], ...args.slice(1)) as any,
     prefix,
   });
 }

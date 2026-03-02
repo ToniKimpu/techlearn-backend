@@ -18,6 +18,7 @@
     "src"
   ],
   "exclude": [
-    "src/legacy"
+    "src/legacy",
+    "src/__tests__"
   ]
 }
