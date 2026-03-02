@@ -41,3 +41,37 @@ registry.registerPath({
     ...errorResponses(400, 401),
   },
 });
+
+registry.registerPath({
+  method: "delete",
+  path: "/upload",
+  tags: ["Upload"],
+  summary: "Delete a file",
+  description: "Delete a previously uploaded file from storage by its URL.",
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            url: z.string().openapi({
+              description: "Full URL of the file to delete",
+              example: "https://storage.example.com/storage/v1/object/public/avatars/abc123.jpg",
+            }),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "File deleted",
+      content: {
+        "application/json": {
+          schema: z.object({ message: z.string() }),
+        },
+      },
+    },
+    ...errorResponses(400, 401),
+  },
+});

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
-import { uploadToStorage } from "../../database/supabase.js";
+import { deleteFromStorage, uploadToStorage } from "../../database/supabase.js";
+import { AppError } from "../../utils/errors.js";
 
 const EXTENSION_MAP: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -16,4 +17,18 @@ async function uploadFile(file: Express.Multer.File, bucket: string): Promise<{ 
   return { url };
 }
 
-export const uploadService = { uploadFile };
+async function deleteFile(fileUrl: string): Promise<void> {
+  const SUPABASE_URL = process.env.SUPABASE_URL!;
+  const prefix = `${SUPABASE_URL}/storage/v1/object/public/`;
+
+  if (!fileUrl.startsWith(prefix)) {
+    throw new AppError(400, "Invalid file URL");
+  }
+
+  const [bucket, ...rest] = fileUrl.replace(prefix, "").split("/");
+  if (!bucket || rest.length === 0) throw new AppError(400, "Invalid file URL");
+
+  await deleteFromStorage(bucket, rest.join("/"));
+}
+
+export const uploadService = { uploadFile, deleteFile };

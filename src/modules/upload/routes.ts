@@ -35,4 +35,16 @@ router.post(
   }
 );
 
+router.delete("/upload", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { url } = req.body as { url?: string };
+    if (!url?.trim()) throw new AppError(400, "url is required");
+
+    await uploadService.deleteFile(url.trim());
+    return res.json({ message: "File deleted" });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 export default router;
