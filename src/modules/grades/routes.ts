@@ -36,10 +36,10 @@ router.get(
   validate({ query: listGradesQuery }),
   async (req, res, next) => {
     try {
-      const { page, limit, search, curriculumId } = res.locals.query as z.infer<
+      const { page, limit, search, curriculumId, include } = res.locals.query as z.infer<
         typeof listGradesQuery
       >;
-      const result = await gradeService.list({ page, limit, search, curriculumId });
+      const result = await gradeService.list({ page, limit, search, curriculumId, include });
       return res.set("X-Cache", result.cached ? "HIT" : "MISS").json(result.data);
     } catch (err) {
       return next(err);

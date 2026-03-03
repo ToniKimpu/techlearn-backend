@@ -5,11 +5,12 @@ import { PrismaClient } from "../../generated/prisma/index.js";
 
 const { Pool } = pg;
 
+const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 const isLocalDb =
-  process.env.DATABASE_URL?.includes("localhost") || process.env.DATABASE_URL?.includes("db:5432");
+  connectionString?.includes("localhost") || connectionString?.includes("127.0.0.1");
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ...(isLocalDb ? {} : { ssl: { rejectUnauthorized: false } }),
 });
 

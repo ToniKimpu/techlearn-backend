@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 import { deleteFromStorage, uploadToStorage } from "../../database/supabase.js";
+import { BUCKET, UPLOAD_FOLDERS, type UploadFolder } from "../../config/storage.js";
 import { AppError } from "../../utils/errors.js";
 
 const EXTENSION_MAP: Record<string, string> = {
@@ -10,10 +11,13 @@ const EXTENSION_MAP: Record<string, string> = {
   "image/gif": "gif",
 };
 
-async function uploadFile(file: Express.Multer.File, bucket: string): Promise<{ url: string }> {
+async function uploadFile(
+  file: Express.Multer.File,
+  folder: UploadFolder
+): Promise<{ url: string }> {
   const ext = EXTENSION_MAP[file.mimetype] || "jpg";
-  const filename = `${crypto.randomUUID()}.${ext}`;
-  const url = await uploadToStorage(bucket, filename, file.buffer, file.mimetype);
+  const path = `${UPLOAD_FOLDERS[folder]}/${crypto.randomUUID()}.${ext}`;
+  const url = await uploadToStorage(BUCKET, path, file.buffer, file.mimetype);
   return { url };
 }
 
@@ -26,9 +30,9 @@ async function deleteFile(fileUrl: string): Promise<void> {
   }
 
   const [bucket, ...rest] = fileUrl.replace(prefix, "").split("/");
-  if (!bucket || rest.length === 0) throw new AppError(400, "Invalid file URL");
+  if (bucket !== BUCKET || rest.length === 0) throw new AppError(400, "Invalid file URL");
 
-  await deleteFromStorage(bucket, rest.join("/"));
+  await deleteFromStorage(BUCKET, rest.join("/"));
 }
 
 export const uploadService = { uploadFile, deleteFile };

@@ -3,6 +3,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { AppError } from "../../utils/errors.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { uploadSingle } from "../../middlewares/upload.js";
+import { UPLOAD_FOLDERS, type UploadFolder } from "../../config/storage.js";
 import { uploadService } from "./service.js";
 
 const router = Router();
@@ -23,11 +24,17 @@ router.post(
   },
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const bucket = req.body.bucket as string | undefined;
-      if (!bucket?.trim()) throw new AppError(400, "bucket is required");
+      const folder = req.body.folder as string | undefined;
+      if (!folder?.trim()) throw new AppError(400, "folder is required");
+      if (!(folder.trim() in UPLOAD_FOLDERS)) {
+        throw new AppError(
+          400,
+          `Invalid folder. Allowed: ${Object.keys(UPLOAD_FOLDERS).join(", ")}`
+        );
+      }
       if (!req.file) throw new AppError(400, "file is required");
 
-      const data = await uploadService.uploadFile(req.file, bucket.trim());
+      const data = await uploadService.uploadFile(req.file, folder.trim() as UploadFolder);
       return res.status(201).json({ message: "File uploaded", data });
     } catch (error) {
       return next(error);

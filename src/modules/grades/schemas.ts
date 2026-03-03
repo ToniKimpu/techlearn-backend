@@ -33,4 +33,5 @@ export const updateGradeBody = z.object({
 
 export const listGradesQuery = paginationQuery.extend({
   curriculumId: bigIntId.optional(),
+  include: z.enum(["subjects"]).optional(),
 });

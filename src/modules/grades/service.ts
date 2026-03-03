@@ -4,7 +4,13 @@ import { AppError } from "../../utils/errors.js";
 
 type CreateInput = { name: string; description?: string; image?: string; curriculumId: string };
 type UpdateInput = { name?: string; description?: string; image?: string; curriculumId?: string };
-type ListInput = { page: number; limit: number; search?: string; curriculumId?: string };
+type ListInput = {
+  page: number;
+  limit: number;
+  search?: string;
+  curriculumId?: string;
+  include?: "subjects";
+};
 
 async function create(data: CreateInput) {
   const curriculum = await prisma.curriculum.findFirst({
@@ -25,8 +31,8 @@ async function create(data: CreateInput) {
   return grade;
 }
 
-async function list({ page, limit, search, curriculumId }: ListInput) {
-  const cacheKey = `grades:list:${page}:${limit}:${curriculumId || "all"}:${search || "all"}`;
+async function list({ page, limit, search, curriculumId, include }: ListInput) {
+  const cacheKey = `grades:list:${page}:${limit}:${curriculumId || "all"}:${search || "all"}:${include || "none"}`;
   const { data: cached } = await getCache(cacheKey);
   if (cached) return { cached: true, data: cached };
 
@@ -49,12 +55,26 @@ async function list({ page, limit, search, curriculumId }: ListInput) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
+      include:
+        include === "subjects"
+          ? { subjects: { where: { isDeleted: false } }, curriculum: { select: { name: true } } }
+          : {
+              _count: { select: { subjects: { where: { isDeleted: false } } } },
+              curriculum: { select: { name: true } },
+            },
     }),
     prisma.grade.count({ where }),
   ]);
 
+  const data = items.map(
+    ({ _count, ...grade }: { _count?: { subjects: number }; [key: string]: unknown }) => ({
+      ...grade,
+      ...(include === "subjects" ? {} : { subjectCount: _count?.subjects ?? 0 }),
+    })
+  );
+
   const response = {
-    data: items,
+    data,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
   await setCache(cacheKey, response, 300);

@@ -4,7 +4,13 @@ import { AppError } from "../../utils/errors.js";
 
 type CreateInput = { name: string; description?: string; image?: string; gradeId: string };
 type UpdateInput = { name?: string; description?: string; image?: string; gradeId?: string };
-type ListInput = { page: number; limit: number; search?: string; gradeId?: string };
+type ListInput = {
+  page: number;
+  limit: number;
+  search?: string;
+  gradeId?: string;
+  include?: "chapters";
+};
 
 async function create(data: CreateInput) {
   const grade = await prisma.grade.findFirst({
@@ -25,8 +31,8 @@ async function create(data: CreateInput) {
   return subject;
 }
 
-async function list({ page, limit, search, gradeId }: ListInput) {
-  const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${search || "all"}`;
+async function list({ page, limit, search, gradeId, include }: ListInput) {
+  const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${search || "all"}:${include || "none"}`;
   const { data: cached } = await getCache(cacheKey);
   if (cached) return { cached: true, data: cached };
 
@@ -49,12 +55,23 @@ async function list({ page, limit, search, gradeId }: ListInput) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
+      include:
+        include === "chapters"
+          ? { chapters: { where: { isDeleted: false } } }
+          : { _count: { select: { chapters: { where: { isDeleted: false } } } } },
     }),
     prisma.subject.count({ where }),
   ]);
 
+  const data = items.map(
+    ({ _count, ...subject }: { _count?: { chapters: number }; [key: string]: unknown }) => ({
+      ...subject,
+      ...(include === "chapters" ? {} : { totalChapterCount: _count?.chapters ?? 0 }),
+    })
+  );
+
   const response = {
-    data: items,
+    data,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
   await setCache(cacheKey, response, 300);

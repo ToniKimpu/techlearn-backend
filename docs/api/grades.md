@@ -61,6 +61,11 @@
 | limit | number | 10 | Positive integer, max 100 |
 | search | string | — | Searches name & description |
 | curriculumId | string \| number | — | Filter by curriculum |
+| include | `"subjects"` | — | Embed full subjects array per grade |
+
+**`include` behaviour:**
+- Omitted (default) → each grade contains `subjectCount: number`
+- `include=subjects` → each grade contains `subjects: Subject[]` (for mobile subject-picker UIs)
 
 **Response (200):**
 
@@ -73,6 +78,8 @@
       "description": null,
       "image": null,
       "curriculumId": "1",
+      "curriculum": { "name": "Primary School" },
+      "subjectCount": 5,
       "isDeleted": false,
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -86,6 +93,8 @@
   }
 }
 ```
+
+With `?include=subjects` each item has `subjects: Subject[]` instead of `subjectCount`, but `curriculum` is always present.
 
 ---
 
