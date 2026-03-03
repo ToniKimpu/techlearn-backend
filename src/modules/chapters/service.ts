@@ -4,7 +4,7 @@ import { AppError } from "../../utils/errors.js";
 
 type CreateInput = {
   title: string;
-  sortOrder: number;
+  sortOrder?: number;
   subjectId: string;
   imageUrl?: string;
   label?: string;
@@ -20,7 +20,15 @@ type UpdateInput = {
   content?: string;
   teacherGuide?: string;
 };
-type ListInput = { page: number; limit: number; search?: string; subjectId?: string };
+type ListInput = {
+  page: number;
+  limit: number;
+  search?: string;
+  subjectId?: string;
+  gradeId?: string;
+  curriculumId?: string;
+  include?: "breadcrumb";
+};
 
 async function create(data: CreateInput) {
   const subject = await prisma.subject.findFirst({
@@ -28,10 +36,20 @@ async function create(data: CreateInput) {
   });
   if (!subject) throw new AppError(404, "Subject not found");
 
+  let sortOrder = data.sortOrder;
+  if (sortOrder === undefined) {
+    const last = await prisma.chapter.findFirst({
+      where: { subjectId: BigInt(data.subjectId), isDeleted: false },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    sortOrder = last ? Number(last.sortOrder) + 1 : 1;
+  }
+
   const chapter = await prisma.chapter.create({
     data: {
       title: data.title,
-      sortOrder: data.sortOrder,
+      sortOrder,
       imageUrl: data.imageUrl || null,
       label: data.label || null,
       content: data.content || null,
@@ -44,19 +62,28 @@ async function create(data: CreateInput) {
   return chapter;
 }
 
-async function list({ page, limit, search, subjectId }: ListInput) {
-  const cacheKey = `chapters:list:${page}:${limit}:${subjectId || "all"}:${search || "all"}`;
+async function list({ page, limit, search, subjectId, gradeId, curriculumId, include }: ListInput) {
+  const cacheKey = `chapters:list:${page}:${limit}:${subjectId || "all"}:${gradeId || "all"}:${curriculumId || "all"}:${search || "all"}:${include || "none"}`;
   const { data: cached } = await getCache(cacheKey);
   if (cached) return { cached: true, data: cached };
 
   const where = {
     isDeleted: false,
     ...(subjectId ? { subjectId: BigInt(subjectId) } : {}),
+    ...(gradeId ? { subject: { gradeId: BigInt(gradeId) } } : {}),
+    ...(curriculumId ? { subject: { grade: { curriculumId: BigInt(curriculumId) } } } : {}),
     ...(search
       ? {
           OR: [
             { title: { contains: search, mode: "insensitive" as const } },
             { label: { contains: search, mode: "insensitive" as const } },
+            { subject: { name: { contains: search, mode: "insensitive" as const } } },
+            { subject: { grade: { name: { contains: search, mode: "insensitive" as const } } } },
+            {
+              subject: {
+                grade: { curriculum: { name: { contains: search, mode: "insensitive" as const } } },
+              },
+            },
           ],
         }
       : {}),
@@ -68,6 +95,20 @@ async function list({ page, limit, search, subjectId }: ListInput) {
       orderBy: { sortOrder: "asc" },
       skip: (page - 1) * limit,
       take: limit,
+      ...(include === "breadcrumb"
+        ? {
+            include: {
+              subject: {
+                select: {
+                  id: true,
+                  name: true,
+                  grade: { select: { name: true, curriculum: { select: { name: true } } } },
+                  _count: { select: { chapters: { where: { isDeleted: false } } } },
+                },
+              },
+            },
+          }
+        : {}),
     }),
     prisma.chapter.count({ where }),
   ]);

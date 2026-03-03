@@ -43,10 +43,17 @@ router.get(
   validate({ query: listChaptersQuery }),
   async (req, res, next) => {
     try {
-      const { page, limit, search, subjectId } = res.locals.query as z.infer<
-        typeof listChaptersQuery
-      >;
-      const result = await chapterService.list({ page, limit, search, subjectId });
+      const { page, limit, search, subjectId, gradeId, curriculumId, include } = res.locals
+        .query as z.infer<typeof listChaptersQuery>;
+      const result = await chapterService.list({
+        page,
+        limit,
+        search,
+        subjectId,
+        gradeId,
+        curriculumId,
+        include,
+      });
       return res.set("X-Cache", result.cached ? "HIT" : "MISS").json(result.data);
     } catch (err) {
       return next(err);

@@ -6,7 +6,7 @@ const sanitize = (val: string) => xss(val, { whiteList: {}, stripIgnoreTag: true
 
 export const createChapterBody = z.object({
   title: z.string().trim().min(1, "Title is required").transform(sanitize),
-  sortOrder: z.number({ error: "sortOrder is required" }),
+  sortOrder: z.number().optional(),
   imageUrl: z.string().trim().optional(),
   label: z
     .string()
@@ -39,4 +39,7 @@ export const updateChapterBody = z.object({
 
 export const listChaptersQuery = paginationQuery.extend({
   subjectId: bigIntId.optional(),
+  gradeId: bigIntId.optional(),
+  curriculumId: bigIntId.optional(),
+  include: z.enum(["breadcrumb"]).optional(),
 });

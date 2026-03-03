@@ -17,6 +17,13 @@ export function validate(schemas: ValidateSchemas) {
         res.locals.query = schemas.query.parse(req.query);
       }
       if (schemas.body) {
+        if (req.body === undefined) {
+          return res
+            .status(400)
+            .json({
+              message: "Request body is missing. Ensure Content-Type: application/json is set.",
+            });
+        }
         req.body = schemas.body.parse(req.body);
       }
       next();
