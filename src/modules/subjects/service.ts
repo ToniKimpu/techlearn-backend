@@ -9,7 +9,7 @@ type ListInput = {
   limit: number;
   search?: string;
   gradeId?: string;
-  include?: "chapters";
+  include?: "chapters" | "breadcrumb";
 };
 
 async function create(data: CreateInput) {
@@ -44,6 +44,12 @@ async function list({ page, limit, search, gradeId, include }: ListInput) {
           OR: [
             { name: { contains: search, mode: "insensitive" as const } },
             { description: { contains: search, mode: "insensitive" as const } },
+            { grade: { name: { contains: search, mode: "insensitive" as const } } },
+            {
+              grade: {
+                curriculum: { name: { contains: search, mode: "insensitive" as const } },
+              },
+            },
           ],
         }
       : {}),
@@ -58,7 +64,12 @@ async function list({ page, limit, search, gradeId, include }: ListInput) {
       include:
         include === "chapters"
           ? { chapters: { where: { isDeleted: false } } }
-          : { _count: { select: { chapters: { where: { isDeleted: false } } } } },
+          : include === "breadcrumb"
+            ? {
+                _count: { select: { chapters: { where: { isDeleted: false } } } },
+                grade: { select: { name: true, curriculum: { select: { name: true } } } },
+              }
+            : { _count: { select: { chapters: { where: { isDeleted: false } } } } },
     }),
     prisma.subject.count({ where }),
   ]);

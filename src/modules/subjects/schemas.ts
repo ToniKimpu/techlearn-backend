@@ -33,5 +33,5 @@ export const updateSubjectBody = z.object({
 
 export const listSubjectsQuery = paginationQuery.extend({
   gradeId: bigIntId.optional(),
-  include: z.enum(["chapters"]).optional(),
+  include: z.enum(["chapters", "breadcrumb"]).optional(),
 });

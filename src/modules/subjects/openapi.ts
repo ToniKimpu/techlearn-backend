@@ -32,6 +32,18 @@ const ListQuery = z.object({
   limit: z.number().int().positive().max(100).optional().openapi({ example: 10 }),
   search: z.string().optional(),
   gradeId: z.string().optional().openapi({ description: "Filter by grade" }),
+  include: z.enum(["chapters", "breadcrumb"]).optional().openapi({
+    description:
+      'Use "breadcrumb" for admin panel (adds grade + curriculum names + totalChapterCount). Use "chapters" to embed full chapter list.',
+  }),
+});
+
+const SubjectWithBreadcrumbSchema = SubjectSchema.extend({
+  totalChapterCount: z.number().openapi({ example: 5 }),
+  grade: z.object({
+    name: z.string().openapi({ example: "Grade 1" }),
+    curriculum: z.object({ name: z.string().openapi({ example: "English" }) }),
+  }),
 });
 
 const IdParam = z.object({
@@ -66,16 +78,18 @@ registry.registerPath({
   path: "/subjects",
   tags: ["Subjects"],
   summary: "List subjects",
-  description: "Paginated list with optional search and grade filter. Cached for 5 minutes.",
+  description:
+    "Paginated list with optional search and grade filter. Cached for 5 minutes. Use `include=breadcrumb` for admin panel views.",
   security: [{ BearerAuth: [] }],
   request: { query: ListQuery },
   responses: {
     200: {
-      description: "Paginated subject list",
+      description:
+        "Paginated subject list. When `include=breadcrumb`, each item includes `grade`, `grade.curriculum`, and `totalChapterCount`.",
       content: {
         "application/json": {
           schema: z.object({
-            data: z.array(SubjectSchema),
+            data: z.array(SubjectWithBreadcrumbSchema),
             pagination: PaginationMeta,
           }),
         },
