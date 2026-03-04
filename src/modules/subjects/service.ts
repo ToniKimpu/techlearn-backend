@@ -9,6 +9,7 @@ type ListInput = {
   limit: number;
   search?: string;
   gradeId?: string;
+  curriculumId?: string;
   include?: "chapters" | "breadcrumb";
 };
 
@@ -31,14 +32,15 @@ async function create(data: CreateInput) {
   return subject;
 }
 
-async function list({ page, limit, search, gradeId, include }: ListInput) {
-  const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${search || "all"}:${include || "none"}`;
+async function list({ page, limit, search, gradeId, curriculumId, include }: ListInput) {
+  const cacheKey = `subjects:list:${page}:${limit}:${gradeId || "all"}:${curriculumId || "all"}:${search || "all"}:${include || "none"}`;
   const { data: cached } = await getCache(cacheKey);
   if (cached) return { cached: true, data: cached };
 
   const where = {
     isDeleted: false,
     ...(gradeId ? { gradeId: BigInt(gradeId) } : {}),
+    ...(curriculumId ? { grade: { curriculumId: BigInt(curriculumId) } } : {}),
     ...(search
       ? {
           OR: [

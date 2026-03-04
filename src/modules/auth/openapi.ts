@@ -1,22 +1,27 @@
 import { z } from "zod";
 import { registry } from "../../openapi/setup.js";
 import { errorResponses } from "../../openapi/helpers.js";
-import { registerBody, loginBody, refreshTokenBody, logoutBody } from "./schemas.js";
+import { registerBody, loginBody } from "./schemas.js";
 
 const TokenResponse = z.object({
   message: z.string(),
   accessToken: z.string(),
-  refreshToken: z.string(),
   user: z.object({
-    authId: z.string().openapi({ example: "c5f2d1a0-1234-4abc-9def-abcdef123456" }),
-    profileId: z.string().openapi({ example: "d6e3f2b1-5678-4def-abcd-fedcba654321" }),
-    userType: z.string().openapi({ example: "student" }),
+    id: z.string().openapi({ example: "d6e3f2b1-5678-4def-abcd-fedcba654321" }),
+    name: z.string().openapi({ example: "Jane Doe" }),
+    email: z.string().openapi({ example: "jane@example.com" }),
+    role: z.string().openapi({ example: "student" }),
   }),
 });
 
 const RefreshedTokenResponse = z.object({
   accessToken: z.string(),
-  refreshToken: z.string(),
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    role: z.string(),
+  }),
 });
 
 const MessageOnly = z.object({ message: z.string() });
@@ -26,7 +31,8 @@ registry.registerPath({
   path: "/auth/register",
   tags: ["Auth"],
   summary: "Register a new user",
-  description: "Creates a student account and returns access/refresh tokens.",
+  description:
+    "Creates a student account. Returns accessToken in body. Sets refreshToken as HttpOnly cookie.",
   request: {
     body: { content: { "application/json": { schema: registerBody } } },
   },
@@ -44,7 +50,8 @@ registry.registerPath({
   path: "/auth/login",
   tags: ["Auth"],
   summary: "Log in",
-  description: "Authenticates with email/password and returns tokens.",
+  description:
+    "Authenticates with email/password. Returns accessToken in body. Sets refreshToken as HttpOnly cookie.",
   request: {
     body: { content: { "application/json": { schema: loginBody } } },
   },
@@ -62,10 +69,8 @@ registry.registerPath({
   path: "/auth/logout",
   tags: ["Auth"],
   summary: "Log out (single device)",
-  description: "Invalidates the given refresh token.",
-  request: {
-    body: { content: { "application/json": { schema: logoutBody } } },
-  },
+  description:
+    "Reads refreshToken from HttpOnly cookie and invalidates the session. No request body needed.",
   responses: {
     200: {
       description: "Logged out",
@@ -96,15 +101,13 @@ registry.registerPath({
   path: "/auth/refresh-token",
   tags: ["Auth"],
   summary: "Rotate refresh token",
-  description: "Exchanges a valid refresh token for a new access/refresh token pair.",
-  request: {
-    body: { content: { "application/json": { schema: refreshTokenBody } } },
-  },
+  description:
+    "Reads refreshToken from HttpOnly cookie, issues a new access token and rotates the refresh token cookie. No request body needed.",
   responses: {
     200: {
-      description: "New token pair",
+      description: "New access token",
       content: { "application/json": { schema: RefreshedTokenResponse } },
     },
-    ...errorResponses(400, 401),
+    ...errorResponses(401),
   },
 });

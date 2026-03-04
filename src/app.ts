@@ -1,4 +1,5 @@
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { AppError } from "./utils/errors.js";
@@ -34,6 +35,7 @@ export const CORS_ORIGIN = process.env.FRONTEND_URL || "http://localhost:3000";
 app.use(helmet());
 app.use(compression());
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   cors({
     origin: CORS_ORIGIN,

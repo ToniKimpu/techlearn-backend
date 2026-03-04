@@ -10,11 +10,3 @@ export const loginBody = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(1, "Password is required"),
 });
-
-export const refreshTokenBody = z.object({
-  refreshToken: z.string().min(1, "Refresh token required"),
-});
-
-export const logoutBody = z.object({
-  refreshToken: z.string().min(1, "Refresh token required"),
-});
