@@ -120,7 +120,10 @@ router.post(
 router.post("/auth/refresh-token", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const refreshToken = req.cookies.refreshToken as string | undefined;
-    if (!refreshToken) throw new AppError(401, "Refresh token missing");
+    if (!refreshToken) {
+      clearAuthCookies(res);
+      return res.status(401).json({ message: "Refresh token missing" });
+    }
     const {
       accessToken,
       refreshToken: newRefreshToken,
@@ -129,6 +132,10 @@ router.post("/auth/refresh-token", async (req: Request, res: Response, next: Nex
     setAuthCookies(res, newRefreshToken);
     return res.json({ accessToken, user });
   } catch (err) {
+    if (err instanceof AppError && err.statusCode === 401) {
+      clearAuthCookies(res);
+      return res.status(401).json({ message: err.message });
+    }
     return next(err);
   }
 });
