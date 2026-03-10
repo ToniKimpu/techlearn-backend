@@ -19,10 +19,10 @@ router.post(
   validate({ body: createGradeBody }),
   async (req, res, next) => {
     try {
-      const { name, description, image, curriculumId } = req.body as z.infer<
+      const { name, description, imageUrl, curriculumId } = req.body as z.infer<
         typeof createGradeBody
       >;
-      const grade = await gradeService.create({ name, description, image, curriculumId });
+      const grade = await gradeService.create({ name, description, image: imageUrl, curriculumId });
       return res.status(201).json({ message: "Grade created", data: grade });
     } catch (err) {
       return next(err);
@@ -62,13 +62,13 @@ router.put(
   validate({ params: idParam, body: updateGradeBody }),
   async (req, res, next) => {
     try {
-      const { name, description, image, curriculumId } = req.body as z.infer<
+      const { name, description, imageUrl, curriculumId } = req.body as z.infer<
         typeof updateGradeBody
       >;
       const updated = await gradeService.update(BigInt(req.params.id as string), {
         name,
         description,
-        image,
+        image: imageUrl,
         curriculumId,
       });
       return res.json({ message: "Grade updated", data: updated });

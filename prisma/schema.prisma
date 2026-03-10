@@ -61,7 +61,7 @@ enum AuthProvider {
 model Curriculum {
   id          BigInt   @id @default(autoincrement())
   createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
-  image       String   @default("")
+  imageUrl    String   @default("") @map("image")
   name        String?  @unique
   description String?
   isDeleted   Boolean  @default(false) @map("is_deleted")
@@ -137,7 +137,7 @@ model Profile {
 model Grade {
   id           BigInt   @id @default(autoincrement())
   createdAt    DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
-  image        String?
+  imageUrl     String?  @map("image")
   description  String?
   name         String?
   isDeleted    Boolean  @default(false) @map("is_deleted")
@@ -156,7 +156,7 @@ model Subject {
   id          BigInt   @id @default(autoincrement())
   createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
   name        String?
-  image       String?
+  imageUrl    String?  @map("image")
   description String?
   isDeleted   Boolean  @default(false) @map("is_deleted")
   gradeId     BigInt?  @map("grade_id")
@@ -184,6 +184,18 @@ model Chapter {
   subject Subject? @relation(fields: [subjectId], references: [id], onDelete: Restrict)
 
   @@map("chapters")
+}
+
+model QuestionBloomLevel {
+  id          BigInt   @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  color       String   @unique @db.VarChar
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  sortOrder   BigInt   @default(0) @map("sort_order")
+
+  @@map("question_bloom_levels")
 }
 
 model School {

@@ -23,7 +23,7 @@ async function create(data: CreateInput) {
     data: {
       name: data.name,
       description: data.description || null,
-      image: data.image || null,
+      imageUrl: data.image || null,
       gradeId: BigInt(data.gradeId),
     },
   });
@@ -120,7 +120,7 @@ async function update(id: bigint, data: UpdateInput) {
     data: {
       ...(data.name !== undefined ? { name: data.name } : {}),
       ...(data.description !== undefined ? { description: data.description || null } : {}),
-      ...(data.image !== undefined ? { image: data.image || null } : {}),
+      ...(data.image !== undefined ? { imageUrl: data.image || null } : {}),
       ...(data.gradeId !== undefined ? { gradeId: BigInt(data.gradeId) } : {}),
     },
   });

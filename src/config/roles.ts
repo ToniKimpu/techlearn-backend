@@ -12,6 +12,7 @@ export const PERMISSIONS = {
   "subject:write": [ROLES.admin],
   "chapter:write": [ROLES.admin],
   "email:admin": [ROLES.admin],
+  "question-bloom-level:write": [ROLES.admin],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;

@@ -1,21 +1,21 @@
 import xss from "xss";
 import { z } from "zod";
-import { bigIntId, paginationQuery } from "../../schemas/shared.js";
+import { paginationQuery } from "../../schemas/shared.js";
 
 const sanitize = (val: string) => xss(val, { whiteList: {}, stripIgnoreTag: true });
 
-export const createSubjectBody = z.object({
+export const createQuestionBloomLevelBody = z.object({
   name: z.string().trim().min(1, "Name is required").transform(sanitize),
   description: z
     .string()
     .trim()
     .optional()
     .transform((val) => (val ? sanitize(val) : val)),
-  imageUrl: z.string().trim().optional(),
-  gradeId: bigIntId,
+  color: z.string().trim().min(1, "Color is required"),
+  sortOrder: z.number().int().optional(),
 });
 
-export const updateSubjectBody = z.object({
+export const updateQuestionBloomLevelBody = z.object({
   name: z
     .string()
     .trim()
@@ -27,12 +27,8 @@ export const updateSubjectBody = z.object({
     .trim()
     .optional()
     .transform((val) => (val ? sanitize(val) : val)),
-  imageUrl: z.string().trim().optional(),
-  gradeId: bigIntId.optional(),
+  color: z.string().trim().min(1, "Color cannot be empty").optional(),
+  sortOrder: z.number().int().optional(),
 });
 
-export const listSubjectsQuery = paginationQuery.extend({
-  gradeId: bigIntId.optional(),
-  curriculumId: bigIntId.optional(),
-  include: z.enum(["chapters", "breadcrumb"]).optional(),
-});
+export const listQuestionBloomLevelQuery = paginationQuery;

@@ -1,18 +1,29 @@
-import { Prisma } from "../../../generated/prisma/index.js";
-
 import { prisma } from "../../database/prisma.js";
 import { invalidateCache } from "../../utils/cache.js";
 import { createCrudService } from "../../utils/crudService.js";
 import { AppError } from "../../utils/errors.js";
+import { Prisma } from "../../../generated/prisma/index.js";
 
-type CreateInput = { name: string; description?: string; image?: string };
-type UpdateInput = { name?: string; description?: string; image?: string };
+type CreateInput = {
+  name: string;
+  description?: string;
+  color: string;
+  sortOrder?: number;
+};
+
+type UpdateInput = {
+  name?: string;
+  description?: string;
+  color?: string;
+  sortOrder?: number;
+};
+
 type ListInput = { page: number; limit: number; search?: string };
 
 const base = createCrudService<CreateInput, UpdateInput, ListInput>({
-  model: prisma.curriculum,
-  cachePrefix: "curriculums",
-  entityName: "Curriculum",
+  model: prisma.questionBloomLevel,
+  cachePrefix: "question-bloom-levels",
+  entityName: "QuestionBloomLevel",
   buildWhere: ({ search }) => ({
     isDeleted: false,
     ...(search
@@ -28,18 +39,19 @@ const base = createCrudService<CreateInput, UpdateInput, ListInput>({
 
 async function create(data: CreateInput) {
   try {
-    const curriculum = await prisma.curriculum.create({
+    const level = await prisma.questionBloomLevel.create({
       data: {
         name: data.name,
         description: data.description || null,
-        imageUrl: data.image || "",
+        color: data.color,
+        sortOrder: data.sortOrder ?? 0,
       },
     });
-    await invalidateCache("curriculums:*");
-    return curriculum;
+    await invalidateCache("question-bloom-levels:*");
+    return level;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      throw new AppError(409, "Curriculum name already exists");
+      throw new AppError(409, "Name or color already exists");
     }
     throw err;
   }
@@ -47,26 +59,29 @@ async function create(data: CreateInput) {
 
 async function update(id: bigint, data: UpdateInput) {
   try {
-    const existing = await prisma.curriculum.findFirst({ where: { id, isDeleted: false } });
-    if (!existing) throw new AppError(404, "Curriculum not found");
+    const existing = await prisma.questionBloomLevel.findFirst({
+      where: { id, isDeleted: false },
+    });
+    if (!existing) throw new AppError(404, "QuestionBloomLevel not found");
 
-    const updated = await prisma.curriculum.update({
+    const updated = await prisma.questionBloomLevel.update({
       where: { id },
       data: {
         ...(data.name !== undefined ? { name: data.name } : {}),
         ...(data.description !== undefined ? { description: data.description || null } : {}),
-        ...(data.image !== undefined ? { imageUrl: data.image } : {}),
+        ...(data.color !== undefined ? { color: data.color } : {}),
+        ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
       },
     });
 
-    await invalidateCache("curriculums:*");
+    await invalidateCache("question-bloom-levels:*");
     return updated;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      throw new AppError(409, "Curriculum name already exists");
+      throw new AppError(409, "Name or color already exists");
     }
     throw err;
   }
 }
 
-export const curriculumService = { ...base, create, update };
+export const questionBloomLevelService = { ...base, create, update };

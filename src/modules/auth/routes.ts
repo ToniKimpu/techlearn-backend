@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
 import passport from "passport";
 
-import { authLimiter } from "../../middlewares/rateLimiter.js";
+import { authLimiter, refreshLimiter } from "../../middlewares/rateLimiter.js";
 import { requireAuth } from "../../middlewares/requireAuth.js";
 import { validate } from "../../middlewares/validate.js";
 import { AppError } from "../../utils/errors.js";
@@ -117,27 +117,31 @@ router.post(
   }
 );
 
-router.post("/auth/refresh-token", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const refreshToken = req.cookies.refreshToken as string | undefined;
-    if (!refreshToken) {
-      clearAuthCookies(res);
-      return res.status(401).json({ message: "Refresh token missing" });
+router.post(
+  "/auth/refresh-token",
+  refreshLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const refreshToken = req.cookies.refreshToken as string | undefined;
+      if (!refreshToken) {
+        clearAuthCookies(res);
+        return res.status(401).json({ message: "Refresh token missing" });
+      }
+      const {
+        accessToken,
+        refreshToken: newRefreshToken,
+        user,
+      } = await authService.rotateRefreshToken(refreshToken);
+      setAuthCookies(res, newRefreshToken);
+      return res.json({ accessToken, user });
+    } catch (err) {
+      if (err instanceof AppError && err.statusCode === 401) {
+        clearAuthCookies(res);
+        return res.status(401).json({ message: err.message });
+      }
+      return next(err);
     }
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      user,
-    } = await authService.rotateRefreshToken(refreshToken);
-    setAuthCookies(res, newRefreshToken);
-    return res.json({ accessToken, user });
-  } catch (err) {
-    if (err instanceof AppError && err.statusCode === 401) {
-      clearAuthCookies(res);
-      return res.status(401).json({ message: err.message });
-    }
-    return next(err);
   }
-});
+);
 
 export default router;

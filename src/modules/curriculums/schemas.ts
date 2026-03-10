@@ -11,7 +11,7 @@ export const createCurriculumBody = z.object({
     .trim()
     .optional()
     .transform((val) => (val ? sanitize(val) : val)),
-  image: z.string().trim().optional(),
+  imageUrl: z.string().trim().optional(),
 });
 
 export const updateCurriculumBody = z.object({
@@ -26,7 +26,7 @@ export const updateCurriculumBody = z.object({
     .trim()
     .optional()
     .transform((val) => (val ? sanitize(val) : val)),
-  image: z.string().trim().optional(),
+  imageUrl: z.string().trim().optional(),
 });
 
 export const listCurriculumsQuery = paginationQuery;

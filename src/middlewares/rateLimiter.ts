@@ -32,6 +32,15 @@ export const authLimiter = rateLimit({
   message: { message: "Too many attempts, please try again later" },
 });
 
+export const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, //15 minutes
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  store: createRedisStore("rl:refresh:"),
+  message: { message: "Too many requests, please try again later" },
+});
+
 // Per-user rate limiter — limits authenticated users regardless of IP
 // Use after requireAuth middleware so req.authUser is available
 export function userLimiter(maxRequests: number, windowMs: number) {

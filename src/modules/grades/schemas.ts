@@ -11,7 +11,7 @@ export const createGradeBody = z.object({
     .trim()
     .optional()
     .transform((val) => (val ? sanitize(val) : val)),
-  image: z.string().trim().optional(),
+  imageUrl: z.string().trim().optional(),
   curriculumId: bigIntId,
 });
 
@@ -27,7 +27,7 @@ export const updateGradeBody = z.object({
     .trim()
     .optional()
     .transform((val) => (val ? sanitize(val) : val)),
-  image: z.string().trim().optional(),
+  imageUrl: z.string().trim().optional(),
   curriculumId: bigIntId.optional(),
 });
 

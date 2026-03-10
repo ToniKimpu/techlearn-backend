@@ -22,7 +22,7 @@ async function create(data: CreateInput) {
     data: {
       name: data.name,
       description: data.description || null,
-      image: data.image || null,
+      imageUrl: data.image || null,
       curriculumId: BigInt(data.curriculumId),
     },
   });
@@ -110,7 +110,7 @@ async function update(id: bigint, data: UpdateInput) {
     data: {
       ...(data.name !== undefined ? { name: data.name } : {}),
       ...(data.description !== undefined ? { description: data.description || null } : {}),
-      ...(data.image !== undefined ? { image: data.image || null } : {}),
+      ...(data.image !== undefined ? { imageUrl: data.image || null } : {}),
       ...(data.curriculumId !== undefined ? { curriculumId: BigInt(data.curriculumId) } : {}),
     },
   });

@@ -19,8 +19,10 @@ router.post(
   validate({ body: createSubjectBody }),
   async (req, res, next) => {
     try {
-      const { name, description, image, gradeId } = req.body as z.infer<typeof createSubjectBody>;
-      const subject = await subjectService.create({ name, description, image, gradeId });
+      const { name, description, imageUrl, gradeId } = req.body as z.infer<
+        typeof createSubjectBody
+      >;
+      const subject = await subjectService.create({ name, description, image: imageUrl, gradeId });
       return res.status(201).json({ message: "Subject created", data: subject });
     } catch (err) {
       return next(err);
@@ -67,11 +69,13 @@ router.put(
   validate({ params: idParam, body: updateSubjectBody }),
   async (req, res, next) => {
     try {
-      const { name, description, image, gradeId } = req.body as z.infer<typeof updateSubjectBody>;
+      const { name, description, imageUrl, gradeId } = req.body as z.infer<
+        typeof updateSubjectBody
+      >;
       const updated = await subjectService.update(BigInt(req.params.id as string), {
         name,
         description,
-        image,
+        image: imageUrl,
         gradeId,
       });
       return res.json({ message: "Subject updated", data: updated });

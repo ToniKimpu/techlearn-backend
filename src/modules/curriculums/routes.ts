@@ -19,8 +19,8 @@ router.post(
   validate({ body: createCurriculumBody }),
   async (req, res, next) => {
     try {
-      const { name, description, image } = req.body as z.infer<typeof createCurriculumBody>;
-      const curriculum = await curriculumService.create({ name, description, image });
+      const { name, description, imageUrl } = req.body as z.infer<typeof createCurriculumBody>;
+      const curriculum = await curriculumService.create({ name, description, image: imageUrl });
       return res.status(201).json({ message: "Curriculum created", data: curriculum });
     } catch (err) {
       return next(err);
@@ -58,11 +58,11 @@ router.put(
   validate({ params: idParam, body: updateCurriculumBody }),
   async (req, res, next) => {
     try {
-      const { name, description, image } = req.body as z.infer<typeof updateCurriculumBody>;
+      const { name, description, imageUrl } = req.body as z.infer<typeof updateCurriculumBody>;
       const updated = await curriculumService.update(BigInt(req.params.id as string), {
         name,
         description,
-        image,
+        image: imageUrl,
       });
       return res.json({ message: "Curriculum updated", data: updated });
     } catch (err) {
