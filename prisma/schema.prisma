@@ -211,6 +211,7 @@ model QuestionBloomLevelMapping {
   question   Question           @relation(fields: [questionId], references: [id])
 
   @@id([bloomLevelId, questionId])
+  @@index([questionId])
   @@map("question_bloom_level_mapping")
 }
 
@@ -247,6 +248,12 @@ model Question {
   answers      QuestionAnswer[]
   bloomLevelMappings QuestionBloomLevelMapping[]
 
+  @@index([chapterId])
+  @@index([subjectId])
+  @@index([type])
+  @@index([createdBy])
+  @@index([isDeleted])
+
   @@map("questions")
 }
 
@@ -259,6 +266,8 @@ model QuestionAnswer {
   questionId BigInt?  @map("question_id")
 
   question Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
 
   @@map("question_answers")
 }
