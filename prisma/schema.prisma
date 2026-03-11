@@ -130,6 +130,7 @@ model Profile {
   userSubjects    UserSubjectMapping[]
   academicYears   UserAcademicYearMapping[]
   authUser        AuthUser?
+  questions       Question[]
 
   @@map("profiles")
 }
@@ -164,6 +165,7 @@ model Subject {
   grade    Grade?               @relation(fields: [gradeId], references: [id], onDelete: Restrict)
   chapters Chapter[]
   users    UserSubjectMapping[]
+  questions Question[]
 
   @@map("subjects")
 }
@@ -181,7 +183,8 @@ model Chapter {
   content      String?
   teacherGuide String?   @map("teacher_guide")
 
-  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  subject   Subject?   @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  questions Question[]
 
   @@map("chapters")
 }
@@ -195,7 +198,69 @@ model QuestionBloomLevel {
   createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
   sortOrder   BigInt   @default(0) @map("sort_order")
 
+  bloomLevelMappings QuestionBloomLevelMapping[]
+
   @@map("question_bloom_levels")
+}
+
+model QuestionBloomLevelMapping {
+  bloomLevelId BigInt @map("bloom_level_id")
+  questionId   BigInt @map("question_id")
+
+  bloomLevel QuestionBloomLevel @relation(fields: [bloomLevelId], references: [id])
+  question   Question           @relation(fields: [questionId], references: [id])
+
+  @@id([bloomLevelId, questionId])
+  @@map("question_bloom_level_mapping")
+}
+
+model QuestionType {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique @db.VarChar
+  image     String?
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  questions Question[]
+
+  @@map("question_types")
+}
+
+model Question {
+  id          BigInt   @id @default(autoincrement())
+  question    String
+  image       String?  @db.VarChar
+  explanation String?
+  links       Json?
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  type        BigInt?
+  createdBy   String?  @db.Uuid @map("created_by")
+  chapterId   BigInt?  @map("chapter_id")
+  subjectId   BigInt?  @map("subject_id")
+
+  questionType QuestionType?    @relation(fields: [type], references: [id], onDelete: Cascade)
+  creator      Profile?         @relation(fields: [createdBy], references: [id])
+  chapter      Chapter?         @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  subject      Subject?         @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  answers      QuestionAnswer[]
+  bloomLevelMappings QuestionBloomLevelMapping[]
+
+  @@map("questions")
+}
+
+model QuestionAnswer {
+  id         BigInt   @id @default(autoincrement())
+  answer     String
+  isCorrect  Boolean  @default(false) @map("is_correct")
+  isDeleted  Boolean  @default(false) @map("is_deleted")
+  createdAt  DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  questionId BigInt?  @map("question_id")
+
+  question Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_answers")
 }
 
 model School {

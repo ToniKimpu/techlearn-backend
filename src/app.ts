@@ -24,6 +24,7 @@ import subjectRoutes from "./modules/subjects/routes.js";
 import emailRoutes from "./modules/email/routes.js";
 import uploadRoutes from "./modules/upload/routes.js";
 import questionBloomLevelRoutes from "./modules/question-bloom-levels/routes.js";
+import questionRoutes from "./modules/questions/routes.js";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -67,6 +68,7 @@ app.use("/api/v1", curriculumRoutes);
 app.use("/api/v1", gradeRoutes);
 app.use("/api/v1", subjectRoutes);
 app.use("/api/v1", chapterRoutes);
+app.use("/api/v1", questionRoutes);
 app.use("/api/v1", questionBloomLevelRoutes);
 app.use("/api/v1", uploadRoutes);
 app.use("/api/v1", emailRoutes);

@@ -47,7 +47,7 @@ CREATE TABLE "public"."chapters" (
     "content" TEXT,
     "teacher_guide" TEXT,
 
-    CONSTRAINT "Chapter_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "chapters_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -72,7 +72,7 @@ CREATE TABLE "public"."grades" (
     "is_deleted" BOOLEAN NOT NULL DEFAULT false,
     "curriculum_id" BIGINT,
 
-    CONSTRAINT "Grade_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "grades_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -95,7 +95,7 @@ CREATE TABLE "public"."locations" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "sort_order" BIGINT NOT NULL DEFAULT 1,
 
-    CONSTRAINT "Location_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "locations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -117,7 +117,7 @@ CREATE TABLE "public"."profiles" (
     "fcm_device_token" TEXT,
     "is_notification_enabled" BOOLEAN NOT NULL DEFAULT true,
 
-    CONSTRAINT "Profile_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "profiles_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -128,7 +128,7 @@ CREATE TABLE "public"."schools" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6),
 
-    CONSTRAINT "School_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "schools_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -154,7 +154,7 @@ CREATE TABLE "public"."subjects" (
     "is_deleted" BOOLEAN NOT NULL DEFAULT false,
     "grade_id" BIGINT,
 
-    CONSTRAINT "Subject_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "subjects_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -173,7 +173,7 @@ CREATE TABLE "public"."user_curriculum_mapping" (
     "user_id" UUID NOT NULL,
     "curriculum_id" BIGINT NOT NULL,
 
-    CONSTRAINT "UserCurriculumMapping_pkey" PRIMARY KEY ("user_id","curriculum_id")
+    CONSTRAINT "user_curriculum_mapping_pkey" PRIMARY KEY ("user_id","curriculum_id")
 );
 
 -- CreateTable
@@ -181,7 +181,7 @@ CREATE TABLE "public"."user_grade_mapping" (
     "user_id" UUID NOT NULL,
     "grade_id" BIGINT NOT NULL,
 
-    CONSTRAINT "UserGradeMapping_pkey" PRIMARY KEY ("user_id","grade_id")
+    CONSTRAINT "user_grade_mapping_pkey" PRIMARY KEY ("user_id","grade_id")
 );
 
 -- CreateTable
@@ -189,53 +189,53 @@ CREATE TABLE "public"."user_subject_mapping" (
     "user_id" UUID NOT NULL,
     "subject_id" BIGINT NOT NULL,
 
-    CONSTRAINT "UserSubjectMapping_pkey" PRIMARY KEY ("user_id","subject_id")
+    CONSTRAINT "user_subject_mapping_pkey" PRIMARY KEY ("user_id","subject_id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "auth_email_key" ON "public"."auth"("email" ASC);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "auth_profileId_key" ON "public"."auth"("profile_id" ASC);
+CREATE UNIQUE INDEX "auth_profile_id_key" ON "public"."auth"("profile_id" ASC);
 
 -- CreateIndex
 CREATE UNIQUE INDEX "curriculums_name_key" ON "public"."curriculums"("name" ASC);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "identities_provider_providerId_key" ON "public"."identities"("provider" ASC, "provider_id" ASC);
+CREATE UNIQUE INDEX "identities_provider_provider_id_key" ON "public"."identities"("provider" ASC, "provider_id" ASC);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Location_name_key" ON "public"."locations"("name" ASC);
+CREATE UNIQUE INDEX "locations_name_key" ON "public"."locations"("name" ASC);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "sessions_refreshToken_key" ON "public"."sessions"("refresh_token" ASC);
+CREATE UNIQUE INDEX "sessions_refresh_token_key" ON "public"."sessions"("refresh_token" ASC);
 
 -- AddForeignKey
-ALTER TABLE "public"."academic_years" ADD CONSTRAINT "academic_years_curriculumId_fkey" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."academic_years" ADD CONSTRAINT "academic_years_curriculum_id_fkey" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."auth" ADD CONSTRAINT "auth_profileId_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."auth" ADD CONSTRAINT "auth_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."chapters" ADD CONSTRAINT "Chapter_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."chapters" ADD CONSTRAINT "chapters_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."grades" ADD CONSTRAINT "Grade_curriculum_id_fkey" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."grades" ADD CONSTRAINT "grades_curriculum_id_fkey" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."identities" ADD CONSTRAINT "identities_authId_fkey" FOREIGN KEY ("auth_id") REFERENCES "public"."auth"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."identities" ADD CONSTRAINT "identities_auth_id_fkey" FOREIGN KEY ("auth_id") REFERENCES "public"."auth"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."profiles" ADD CONSTRAINT "Profile_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."profiles" ADD CONSTRAINT "profiles_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."schools" ADD CONSTRAINT "School_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."schools" ADD CONSTRAINT "schools_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."sessions" ADD CONSTRAINT "sessions_authId_fkey" FOREIGN KEY ("auth_id") REFERENCES "public"."auth"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."sessions" ADD CONSTRAINT "sessions_auth_id_fkey" FOREIGN KEY ("auth_id") REFERENCES "public"."auth"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."subjects" ADD CONSTRAINT "Subject_grade_id_fkey" FOREIGN KEY ("grade_id") REFERENCES "public"."grades"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."subjects" ADD CONSTRAINT "subjects_grade_id_fkey" FOREIGN KEY ("grade_id") REFERENCES "public"."grades"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."user_academic_year_mapping" ADD CONSTRAINT "user_academic_year_mapping_academic_year_id_fkey" FOREIGN KEY ("academic_year_id") REFERENCES "public"."academic_years"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -247,20 +247,19 @@ ALTER TABLE "public"."user_academic_year_mapping" ADD CONSTRAINT "user_academic_
 ALTER TABLE "public"."user_academic_year_mapping" ADD CONSTRAINT "user_academic_year_mapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_curriculum_mapping" ADD CONSTRAINT "UserCurriculumMapping_curriculum_id_fkey" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."user_curriculum_mapping" ADD CONSTRAINT "user_curriculum_mapping_curriculum_id_fkey" FOREIGN KEY ("curriculum_id") REFERENCES "public"."curriculums"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_curriculum_mapping" ADD CONSTRAINT "UserCurriculumMapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."user_curriculum_mapping" ADD CONSTRAINT "user_curriculum_mapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_grade_mapping" ADD CONSTRAINT "UserGradeMapping_grade_id_fkey" FOREIGN KEY ("grade_id") REFERENCES "public"."grades"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."user_grade_mapping" ADD CONSTRAINT "user_grade_mapping_grade_id_fkey" FOREIGN KEY ("grade_id") REFERENCES "public"."grades"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_grade_mapping" ADD CONSTRAINT "UserGradeMapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."user_grade_mapping" ADD CONSTRAINT "user_grade_mapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_subject_mapping" ADD CONSTRAINT "UserSubjectMapping_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."user_subject_mapping" ADD CONSTRAINT "user_subject_mapping_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_subject_mapping" ADD CONSTRAINT "UserSubjectMapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
+ALTER TABLE "public"."user_subject_mapping" ADD CONSTRAINT "user_subject_mapping_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
