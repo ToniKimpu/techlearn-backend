@@ -93,7 +93,7 @@ import { Prisma } from "../../../generated/prisma/index.js";
 
 import { prisma } from "../../database/prisma.js";
 import { invalidateCache } from "../../utils/cache.js";
-import { createCrudService } from "../../utils/crudService.js";
+import { createBaseService } from "../../utils/crudService.js";
 import { AppError } from "../../utils/errors.js";
 
 type CreateInput = {
@@ -112,7 +112,7 @@ type UpdateInput = {
 
 type ListInput = { page: number; limit: number; search?: string };
 
-const base = createCrudService<CreateInput, UpdateInput, ListInput>({
+const base = createBaseService<CreateInput, UpdateInput, ListInput>({
   model: prisma.questionBloomLevel,
   cachePrefix: "question-bloom-levels",
   entityName: "QuestionBloomLevel",

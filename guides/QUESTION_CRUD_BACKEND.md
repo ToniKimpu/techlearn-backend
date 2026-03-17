@@ -93,7 +93,7 @@ Create `src/modules/questions/service.ts`:
 ```typescript
 import { prisma } from "../../database/prisma.js";
 import { invalidateCache } from "../../utils/cache.js";
-import { createCrudService } from "../../utils/crudService.js";
+import { createBaseService } from "../../utils/crudService.js";
 import { AppError } from "../../utils/errors.js";
 
 type CreateInput = {
@@ -146,7 +146,7 @@ function buildInclude(includeParam?: string) {
   return Object.keys(include).length > 0 ? include : undefined;
 }
 
-const base = createCrudService<CreateInput, UpdateInput, ListInput>({
+const base = createBaseService<CreateInput, UpdateInput, ListInput>({
   model: prisma.question,
   cachePrefix: "questions",
   entityName: "Question",

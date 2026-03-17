@@ -110,7 +110,7 @@ export interface CrudServiceOptions<TListInput extends { page: number; limit: nu
   detailTtl?: number;
 }
 
-export function createCrudService<
+export function createBaseService<
   TCreateInput,
   TUpdateInput,
   TListInput extends { page: number; limit: number; search?: string },
@@ -195,13 +195,13 @@ import { Prisma } from "../../../generated/prisma/index.js";
 import { prisma } from "../../database/prisma.js";
 import { invalidateCache } from "../../utils/cache.js";
 import { AppError } from "../../utils/errors.js";
-import { createCrudService } from "../../utils/crudService.js";
+import { createBaseService } from "../../utils/crudService.js";
 
 type CreateInput = { name: string; description?: string; image?: string };
 type UpdateInput = { name?: string; description?: string; image?: string };
 type ListInput = { page: number; limit: number; search?: string };
 
-const base = createCrudService<CreateInput, UpdateInput, ListInput>({
+const base = createBaseService<CreateInput, UpdateInput, ListInput>({
   model: prisma.curriculum,
   cachePrefix: "curriculums",
   entityName: "Curriculum",
@@ -276,7 +276,7 @@ export const curriculumService = {
 import { prisma } from "../../database/prisma.js";
 import { invalidateCache } from "../../utils/cache.js";
 import { AppError } from "../../utils/errors.js";
-import { createCrudService } from "../../utils/crudService.js";
+import { createBaseService } from "../../utils/crudService.js";
 
 type CreateInput = { name: string; description?: string; image?: string; curriculumId: string };
 type UpdateInput = { name?: string; description?: string; image?: string; curriculumId?: string };
@@ -288,7 +288,7 @@ type ListInput = {
   include?: "subjects";
 };
 
-const base = createCrudService<CreateInput, UpdateInput, ListInput>({
+const base = createBaseService<CreateInput, UpdateInput, ListInput>({
   model: prisma.grade,
   cachePrefix: "grades",
   entityName: "Grade",
@@ -371,7 +371,7 @@ export const gradeService = {
 
 Apply the same pattern to `src/modules/subjects/service.ts` and `src/modules/chapters/service.ts`:
 
-1. Create `const base = createCrudService({ ... })` with module-specific `buildWhere`, `listCacheKey`, `listInclude`, `transformItem`
+1. Create `const base = createBaseService({ ... })` with module-specific `buildWhere`, `listCacheKey`, `listInclude`, `transformItem`
 2. Keep `create` and `update` as standalone functions (they have module-specific logic)
 3. Export `{ ...base, create, update }`
 

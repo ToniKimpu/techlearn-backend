@@ -9,7 +9,7 @@ type PrismaModel = {
   update: (args: any) => Promise<any>;
 };
 
-export interface CrudServiceOptions<
+export interface BaseServiceOptions<
   TListInput extends { page: number; limit: number; search?: string },
 > {
   /** Prisma delegate, e.g. prisma.curriculum */
@@ -23,6 +23,9 @@ export interface CrudServiceOptions<
 
   /** Build the Prisma `where` object from list params */
   buildWhere: (params: TListInput) => Record<string, unknown>;
+
+  /** Default orderBy for list queries (default: { createdAt: "desc" }) */
+  orderBy?: Record<string, string>;
 
   /** Build a unique cache key suffix from list params (beyond page/limit/search) */
   listCacheKey?: (params: TListInput) => string;
@@ -40,13 +43,12 @@ export interface CrudServiceOptions<
   detailTtl?: number;
 }
 
-export function createCrudService<
-  _TCreateInput,
-  _TUpdateInput,
+export function createBaseService<
   TListInput extends { page: number; limit: number; search?: string },
->(opts: CrudServiceOptions<TListInput>) {
+>(opts: BaseServiceOptions<TListInput>) {
   const listTtl = opts.listTtl ?? 300;
   const detailTtl = opts.detailTtl ?? 600;
+  const orderBy = opts.orderBy ?? { createdAt: "desc" };
 
   async function list(params: TListInput) {
     const extra = opts.listCacheKey?.(params) ?? "";
@@ -61,7 +63,7 @@ export function createCrudService<
     const [items, total] = await Promise.all([
       opts.model.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip: (params.page - 1) * params.limit,
         take: params.limit,
         ...(include ? { include } : {}),

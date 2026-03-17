@@ -1,5 +1,6 @@
 import { prisma } from "../../database/prisma.js";
-import { getCache, invalidateCache, setCache } from "../../utils/cache.js";
+import { invalidateCache } from "../../utils/cache.js";
+import { createBaseService } from "../../utils/crudService.js";
 import { AppError } from "../../utils/errors.js";
 
 type CreateInput = {
@@ -29,6 +30,49 @@ type ListInput = {
   curriculumId?: string;
   include?: "breadcrumb";
 };
+
+const base = createBaseService<ListInput>({
+  model: prisma.chapter,
+  cachePrefix: "chapters",
+  entityName: "Chapter",
+  orderBy: { sortOrder: "asc" },
+  buildWhere: ({ search, subjectId, gradeId, curriculumId }) => ({
+    isDeleted: false,
+    ...(subjectId ? { subjectId: BigInt(subjectId) } : {}),
+    ...(gradeId ? { subject: { gradeId: BigInt(gradeId) } } : {}),
+    ...(curriculumId ? { subject: { grade: { curriculumId: BigInt(curriculumId) } } } : {}),
+    ...(search
+      ? {
+          OR: [
+            { title: { contains: search, mode: "insensitive" } },
+            { label: { contains: search, mode: "insensitive" } },
+            { subject: { name: { contains: search, mode: "insensitive" } } },
+            { subject: { grade: { name: { contains: search, mode: "insensitive" } } } },
+            {
+              subject: {
+                grade: { curriculum: { name: { contains: search, mode: "insensitive" } } },
+              },
+            },
+          ],
+        }
+      : {}),
+  }),
+  listCacheKey: ({ subjectId, gradeId, curriculumId, include }) =>
+    `:${subjectId || "all"}:${gradeId || "all"}:${curriculumId || "all"}:${include || "none"}`,
+  listInclude: ({ include }) =>
+    include === "breadcrumb"
+      ? {
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              grade: { select: { name: true, curriculum: { select: { name: true } } } },
+              _count: { select: { chapters: { where: { isDeleted: false } } } },
+            },
+          },
+        }
+      : undefined,
+});
 
 async function create(data: CreateInput) {
   const subject = await prisma.subject.findFirst({
@@ -62,78 +106,6 @@ async function create(data: CreateInput) {
   return chapter;
 }
 
-async function list({ page, limit, search, subjectId, gradeId, curriculumId, include }: ListInput) {
-  const cacheKey = `chapters:list:${page}:${limit}:${subjectId || "all"}:${gradeId || "all"}:${curriculumId || "all"}:${search || "all"}:${include || "none"}`;
-  const { data: cached } = await getCache(cacheKey);
-  if (cached) return { cached: true, data: cached };
-
-  const where = {
-    isDeleted: false,
-    ...(subjectId ? { subjectId: BigInt(subjectId) } : {}),
-    ...(gradeId ? { subject: { gradeId: BigInt(gradeId) } } : {}),
-    ...(curriculumId ? { subject: { grade: { curriculumId: BigInt(curriculumId) } } } : {}),
-    ...(search
-      ? {
-          OR: [
-            { title: { contains: search, mode: "insensitive" as const } },
-            { label: { contains: search, mode: "insensitive" as const } },
-            { subject: { name: { contains: search, mode: "insensitive" as const } } },
-            { subject: { grade: { name: { contains: search, mode: "insensitive" as const } } } },
-            {
-              subject: {
-                grade: { curriculum: { name: { contains: search, mode: "insensitive" as const } } },
-              },
-            },
-          ],
-        }
-      : {}),
-  };
-
-  const [items, total] = await Promise.all([
-    prisma.chapter.findMany({
-      where,
-      orderBy: { sortOrder: "asc" },
-      skip: (page - 1) * limit,
-      take: limit,
-      ...(include === "breadcrumb"
-        ? {
-            include: {
-              subject: {
-                select: {
-                  id: true,
-                  name: true,
-                  grade: { select: { name: true, curriculum: { select: { name: true } } } },
-                  _count: { select: { chapters: { where: { isDeleted: false } } } },
-                },
-              },
-            },
-          }
-        : {}),
-    }),
-    prisma.chapter.count({ where }),
-  ]);
-
-  const response = {
-    data: items,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-  };
-  await setCache(cacheKey, response, 300);
-  return { cached: false, data: response };
-}
-
-async function getById(id: bigint) {
-  const cacheKey = `chapters:detail:${id}`;
-  const { data: cached } = await getCache(cacheKey);
-  if (cached) return { cached: true, data: cached };
-
-  const chapter = await prisma.chapter.findFirst({ where: { id, isDeleted: false } });
-  if (!chapter) throw new AppError(404, "Chapter not found");
-
-  const response = { data: chapter };
-  await setCache(cacheKey, response, 600);
-  return { cached: false, data: response };
-}
-
 async function update(id: bigint, data: UpdateInput) {
   const existing = await prisma.chapter.findFirst({ where: { id, isDeleted: false } });
   if (!existing) throw new AppError(404, "Chapter not found");
@@ -162,12 +134,4 @@ async function update(id: bigint, data: UpdateInput) {
   return updated;
 }
 
-async function softDelete(id: bigint) {
-  const existing = await prisma.chapter.findFirst({ where: { id, isDeleted: false } });
-  if (!existing) throw new AppError(404, "Chapter not found");
-
-  await prisma.chapter.update({ where: { id }, data: { isDeleted: true } });
-  await invalidateCache("chapters:*");
-}
-
-export const chapterService = { create, list, getById, update, softDelete };
+export const chapterService = { ...base, create, update };
