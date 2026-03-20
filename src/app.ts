@@ -25,6 +25,7 @@ import emailRoutes from "./modules/email/routes.js";
 import uploadRoutes from "./modules/upload/routes.js";
 import questionBloomLevelRoutes from "./modules/question-bloom-levels/routes.js";
 import questionRoutes from "./modules/questions/routes.js";
+import usersRoutes from "./modules/users/routes.js";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -72,6 +73,7 @@ app.use("/api/v1", questionRoutes);
 app.use("/api/v1", questionBloomLevelRoutes);
 app.use("/api/v1", uploadRoutes);
 app.use("/api/v1", emailRoutes);
+app.use("/api/v1/users", usersRoutes);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("API running");

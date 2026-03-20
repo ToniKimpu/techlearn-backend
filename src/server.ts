@@ -39,10 +39,17 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  logger.info({ authId: socket.data.user?.authId }, "Socket connected");
+  const { authId, profileId } = socket.data.user ?? {};
+
+  logger.info({ authId }, "Socket connected");
+
+  //Join a private room so we can target this user by profileId
+  if (profileId) {
+    socket.join(`user:${profileId}`);
+  }
 
   socket.on("disconnect", () => {
-    logger.info({ authId: socket.data.user?.authId }, "Socket disconnected");
+    logger.info({ authId }, "Socket disconnected");
   });
 });
 
